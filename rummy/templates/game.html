@@ -489,6 +489,13 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .group-column.valid {
+            border-color: #4caf50;
+            background: rgba(76, 175, 80, 0.2);
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
         }
 
         .group-column.drop-target {
@@ -674,6 +681,20 @@
         .rule-text {
             color: #e8f5e9;
             font-size: 0.9em;
+        }
+
+        .validation-status {
+            margin-top: 5px;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+
+        .validation-status.valid {
+            color: #4caf50;
+        }
+
+        .validation-status.invalid {
+            color: #f44336;
         }
     </style>
 </head>
@@ -1046,7 +1067,12 @@
 
                     const header = document.createElement('div');
                     header.className = 'group-header';
+                    
+                    const statusEl = document.createElement('div');
+                    statusEl.className = 'validation-status';
+                    
                     header.innerHTML = `<strong>${group.title}</strong><span>${group.description}</span>`;
+                    header.appendChild(statusEl);
 
                     const cardWrap = document.createElement('div');
                     cardWrap.className = 'group-cards';
@@ -1065,7 +1091,124 @@
                     column.appendChild(header);
                     column.appendChild(cardWrap);
                     board.appendChild(column);
+                    
+                    // Validate the group
+                    validateGroup(group.id, statusEl, column);
                 });
+            }
+
+            function validateGroup(groupId, statusEl, columnEl) {
+                const cards = (groupState[groupId] || []).map(id => cardRegistry[id].code);
+                
+                if (cards.length === 0) {
+                    statusEl.textContent = 'Empty';
+                    statusEl.className = 'validation-status';
+                    columnEl.classList.remove('valid');
+                    return;
+                }
+                
+                let isValid = false;
+                let message = 'Invalid';
+                
+                if (groupId === 'first-life') {
+                    isValid = checkPureSequence(cards);
+                    message = isValid ? 'Valid Pure Sequence' : 'Not a Pure Sequence';
+                } else if (groupId === 'second-life') {
+                    isValid = checkSequence(cards);
+                    message = isValid ? 'Valid Sequence' : 'Not a Sequence';
+                } else if (groupId === 'set-one' || groupId === 'set-two') {
+                    isValid = checkSet(cards);
+                    message = isValid ? 'Valid Set' : 'Not a Set';
+                }
+                
+                statusEl.textContent = message;
+                statusEl.className = `validation-status ${isValid ? 'valid' : 'invalid'}`;
+                
+                if (isValid) {
+                    columnEl.classList.add('valid');
+                } else {
+                    columnEl.classList.remove('valid');
+                }
+            }
+
+            function checkPureSequence(cards) {
+                if (cards.length < 3) return false;
+                
+                // Check if any jokers are used
+                if (cards.some(card => isPrintedJoker(card) || isWildCard(card))) {
+                    return false;
+                }
+                
+                return checkSequence(cards);
+            }
+
+            function checkSequence(cards) {
+                if (cards.length < 3) return false;
+                
+                // Filter out jokers for sequence checking
+                const nonJokerCards = cards.filter(card => !isPrintedJoker(card) && !isWildCard(card));
+                const jokerCount = cards.length - nonJokerCards.length;
+                
+                if (nonJokerCards.length === 0) return false;
+                
+                // Sort by rank
+                const sortedCards = [...nonJokerCards].sort((a, b) => getCardRankValue(a) - getCardRankValue(b));
+                
+                // Check if all same suit
+                const suits = sortedCards.map(card => getCardSuit(card));
+                if (new Set(suits).size !== 1) {
+                    return false;
+                }
+                
+                // Check consecutive ranks with joker filling gaps
+                let gaps = 0;
+                for (let i = 0; i < sortedCards.length - 1; i++) {
+                    const gap = getCardRankValue(sortedCards[i+1]) - getCardRankValue(sortedCards[i]) - 1;
+                    if (gap < 0) return false; // Not in order
+                    gaps += gap;
+                }
+                
+                return gaps <= jokerCount;
+            }
+
+            function checkSet(cards) {
+                if (cards.length < 3) return false;
+                
+                // Filter out jokers for set checking
+                const nonJokerCards = cards.filter(card => !isPrintedJoker(card) && !isWildCard(card));
+                const jokerCount = cards.length - nonJokerCards.length;
+                
+                if (nonJokerCards.length === 0) return jokerCount >= 3;
+                
+                // Check all same rank
+                const ranks = nonJokerCards.map(card => getCardRank(card));
+                if (new Set(ranks).size !== 1) {
+                    return false;
+                }
+                
+                // Check all different suits
+                const suits = nonJokerCards.map(card => getCardSuit(card));
+                const uniqueSuits = new Set(suits);
+                
+                return (uniqueSuits.size + jokerCount) >= cards.length;
+            }
+
+            function getCardRankValue(card) {
+                if (isPrintedJoker(card)) return 0;
+                const rank = card.slice(0, -1);
+                const values = {'A': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, 
+                              '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13};
+                return values[rank] || 0;
+            }
+
+            function getCardRank(card) {
+                if (isPrintedJoker(card)) return 'JOKER';
+                return card.slice(0, -1);
+            }
+
+            function getCardSuit(card) {
+                if (isPrintedJoker(card)) return null;
+                return card.slice(-1);
             }
 
             function createCardElement(item, groupId) {
