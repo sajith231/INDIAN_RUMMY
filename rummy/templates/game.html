@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indian Rummy - 13 Cards</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .card-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        h3 {
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        button, .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            flex: 1;
+        }
+
+        button:hover, .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active, .btn:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c33;
+        }
+
+        /* Game Table Styles */
+        .game-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-code {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .status-badge {
+            background: rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+        }
+
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .player-card {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            transition: all 0.3s;
+        }
+
+        .player-card.active {
+            border-color: #667eea;
+            background: #f0f4ff;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .player-card.me {
+            background: #e8f5e9;
+            border-color: #4caf50;
+        }
+
+        .player-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .player-info {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            margin-left: 5px;
+        }
+
+        .badge.owner {
+            background: #ffa726;
+        }
+
+        /* Card Styles */
+        .game-area {
+            background: #e8f5e9;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .deck-area {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .deck-pile, .discard-pile {
+            text-align: center;
+        }
+
+        .pile-label {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        .card-back, .card-front {
+            width: 80px;
+            height: 112px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .card-back:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-front {
+            background: white;
+            color: #333;
+            border: 2px solid #333;
+        }
+
+        .card-front.red {
+            color: #c33;
+            border-color: #c33;
+        }
+
+        .empty-pile {
+            background: rgba(0, 0, 0, 0.1);
+            border: 2px dashed #999;
+            color: #999;
+            cursor: default;
+        }
+
+        .hand-area {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .hand-title {
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .turn-indicator {
+            background: #4caf50;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .cards-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .card {
+            width: 70px;
+            height: 98px;
+            background: white;
+            border: 2px solid #333;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .card.selected {
+            transform: translateY(-15px);
+            border-color: #667eea;
+            border-width: 3px;
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .card.red {
+            color: #c33;
+            border-color: #c33;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .info-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .card-container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .players-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                width: 60px;
+                height: 84px;
+                font-size: 1.1em;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% if page == "home" %}
+        <div class="card-container">
+            <h1>🎴 Indian Rummy</h1>
+            <p class="subtitle">13 Cards - Multiplayer Game</p>
+            
+            <div class="btn-group">
+                <a href="{% url 'create_table' %}" class="btn">
+                    🎮 Create New Table
+                </a>
+                <a href="{% url 'join_table' %}" class="btn btn-secondary">
+                    🚪 Join Existing Table
+                </a>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-top: 30px;">
+                <h3>How to Play:</h3>
+                <ul style="padding-left: 30px; line-height: 1.8;">
+                    <li>Each player gets 13 cards</li>
+                    <li>Form valid sets and sequences</li>
+                    <li>Draw from deck or discard pile</li>
+                    <li>Discard one card each turn</li>
+                    <li>First to complete wins!</li>
+                </ul>
+            </div>
+        </div>
+
+        {% elif page == "create" %}
+        <div class="card-container">
+            <h2>🎮 Create Rummy Table</h2>
+            
+            {% if error %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>Your Name</label>
+                    <input type="text" name="name" required placeholder="Enter your name" maxlength="50">
+                </div>
+
+                <button type="submit">Create Table</button>
+            </form>
+
+            <div style="margin-top: 20px;">
+                <a href="{% url 'home' %}" class="btn btn-secondary">← Back to Home</a>
+            </div>
+        </div>
+
+        {% elif page == "join" %}
+        <div class="card-container">
+            <h2>🚪 Join Rummy Table</h2>
+
+            {% if error %}
+            <div class="error">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>Your Name</label>
+                    <input type="text" name="name" required placeholder="Enter your name" maxlength="50">
+                </div>
+
+                <div class="form-group">
+                    <label>Table Code</label>
+                    <input type="text" name="code" required placeholder="Enter 6-digit code" maxlength="6" style="text-transform: uppercase;">
+                </div>
+
+                <button type="submit">Join Table</button>
+            </form>
+
+            <div style="margin-top: 20px;">
+                <a href="{% url 'home' %}" class="btn btn-secondary">← Back to Home</a>
+            </div>
+        </div>
+
+        {% elif page == "table" %}
+        <div class="card-container">
+            <div class="game-header">
+                <div>
+                    <div class="table-code">Table: {{ table.code }}</div>
+                    <div style="font-size: 0.9em; margin-top: 5px;">
+                        Deck: <span id="deckCount">{{ deck_count }}</span> cards
+                    </div>
+                </div>
+                <div class="status-badge" id="gameStatus">{{ table.status }}</div>
+            </div>
+
+            <div class="players-grid" id="playersGrid">
+                {% for p in players %}
+                <div class="player-card {% if p.id == player.id %}me{% endif %}" data-player-id="{{ p.id }}">
+                    <div class="player-name">
+                        {{ p.name }}
+                        {% if p.is_owner %}<span class="badge owner">Owner</span>{% endif %}
+                        {% if p.id == player.id %}<span class="badge">You</span>{% endif %}
+                    </div>
+                    <div class="player-info">
+                        <span id="cardCount{{ p.id }}">{% if p.id == player.id %}{{ hand|length }}{% else %}13{% endif %}</span> cards
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if table.status == "waiting" %}
+            <div class="info-box">
+                Waiting for players... 
+                {% if player.is_owner %}
+                    <div style="margin-top: 10px;">
+                        <button onclick="startGame()" id="startBtn" {% if players|length < 2 %}disabled{% endif %}>
+                            Start Game
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if table.status == "playing" %}
+            <div class="game-area">
+                <div class="deck-area">
+                    <div class="deck-pile">
+                        <div class="pile-label">Deck</div>
+                        <div class="card-back" onclick="drawFromDeck()" id="deckPile">
+                            🂠
+                        </div>
+                    </div>
+
+                    <div class="discard-pile">
+                        <div class="pile-label">Discard Pile</div>
+                        {% if top_discard %}
+                        <div class="card-front {% if top_discard|slice:'-1:' in '♥♦' %}red{% endif %}" 
+                             onclick="drawFromDiscard()" id="discardPile">
+                            {{ top_discard }}
+                        </div>
+                        {% else %}
+                        <div class="card-front empty-pile" id="discardPile">Empty</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="hand-area">
+                    <div class="hand-title">
+                        <h3>Your Hand</h3>
+                        <span id="turnIndicator"></span>
+                    </div>
+                    
+                    <div class="cards-container" id="handCards">
+                        {% for card in hand %}
+                        <div class="card {% if card|slice:'-1:' in '♥♦' %}red{% endif %}" 
+                             onclick="selectCard('{{ card }}')" 
+                             data-card="{{ card }}">
+                            {{ card }}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="controls">
+                        <button onclick="discardSelected()" id="discardBtn" disabled>
+                            Discard Selected Card
+                        </button>
+                        <button onclick="declareWin()" class="btn-success" disabled>
+                            Declare Win
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div style="margin-top: 20px;">
+                <a href="{% url 'home' %}" class="btn btn-secondary">← Leave Table</a>
+            </div>
+        </div>
+
+        <script>
+            const tableCode = '{{ table.code }}';
+            const csrfToken = '{{ csrf_token }}';
+            let selectedCard = null;
+            let hasDrawn = {{ player.has_drawn|yesno:"true,false" }};
+            let isMyTurn = {{ is_my_turn|yesno:"true,false" }};
+
+            // Poll for game state updates
+            setInterval(updateGameState, 2000);
+
+            function updateGameState() {
+                fetch(`/api/table/${tableCode}/state/`)
+                    .then(res => res.json())
+                    .then(data => {
+                        // Update status
+                        document.getElementById('gameStatus').textContent = data.status;
+                        document.getElementById('deckCount').textContent = data.deck_count;
+
+                        // Update players
+                        data.players.forEach(p => {
+                            const card = document.querySelector(`[data-player-id="${p.id}"]`);
+                            if (card) {
+                                card.classList.toggle('active', p.is_turn);
+                                const countEl = document.getElementById(`cardCount${p.id}`);
+                                if (countEl) countEl.textContent = p.card_count;
+                            }
+                        });
+
+                        // Update hand
+                        const handContainer = document.getElementById('handCards');
+                        if (handContainer && data.my_hand) {
+                            updateHand(data.my_hand);
+                        }
+
+                        // Update discard pile
+                        if (data.top_discard) {
+                            const pile = document.getElementById('discardPile');
+                            const isRed = data.top_discard.includes('♥') || data.top_discard.includes('♦');
+                            pile.className = `card-front ${isRed ? 'red' : ''}`;
+                            pile.textContent = data.top_discard;
+                        }
+
+                        // Update turn indicator
+                        const myTurn = data.players.find(p => p.is_me)?.is_turn;
+                        isMyTurn = myTurn;
+                        hasDrawn = data.has_drawn;
+                        
+                        const indicator = document.getElementById('turnIndicator');
+                        if (indicator) {
+                            indicator.innerHTML = myTurn ? '<span class="turn-indicator">Your Turn!</span>' : '';
+                        }
+
+                        // Update button states
+                        updateButtonStates();
+
+                        // Reload page if status changed to playing
+                        if (data.status === 'playing' && document.getElementById('startBtn')) {
+                            location.reload();
+                        }
+                    })
+                    .catch(err => console.error('Error updating game state:', err));
+            }
+
+            function updateHand(cards) {
+                const container = document.getElementById('handCards');
+                container.innerHTML = '';
+                cards.forEach(card => {
+                    const isRed = card.includes('♥') || card.includes('♦');
+                    const div = document.createElement('div');
+                    div.className = `card ${isRed ? 'red' : ''}`;
+                    div.setAttribute('data-card', card);
+                    div.onclick = () => selectCard(card);
+                    div.textContent = card;
+                    container.appendChild(div);
+                });
+            }
+
+            function selectCard(card) {
+                if (!hasDrawn) return;
+                
+                document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+                const cardEl = document.querySelector(`[data-card="${card}"]`);
+                if (cardEl) {
+                    cardEl.classList.add('selected');
+                    selectedCard = card;
+                    updateButtonStates();
+                }
+            }
+
+            function updateButtonStates() {
+                const discardBtn = document.getElementById('discardBtn');
+                if (discardBtn) {
+                    discardBtn.disabled = !hasDrawn || !selectedCard || !isMyTurn;
+                }
+            }
+
+            function startGame() {
+                fetch(`/api/table/${tableCode}/start/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.error || 'Failed to start game');
+                    }
+                })
+                .catch(err => alert('Error starting game'));
+            }
+
+            function drawFromDeck() {
+                if (!isMyTurn || hasDrawn) return;
+                
+                fetch(`/api/table/${tableCode}/draw/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ from_discard: false })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        hasDrawn = true;
+                        updateGameState();
+                    } else {
+                        alert(data.error || 'Failed to draw card');
+                    }
+                })
+                .catch(err => alert('Error drawing card'));
+            }
+
+            function drawFromDiscard() {
+                if (!isMyTurn || hasDrawn) return;
+                
+                fetch(`/api/table/${tableCode}/draw/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ from_discard: true })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        hasDrawn = true;
+                        updateGameState();
+                    } else {
+                        alert(data.error || 'Failed to draw card');
+                    }
+                })
+                .catch(err => alert('Error drawing card'));
+            }
+
+            function discardSelected() {
+                if (!selectedCard || !hasDrawn) return;
+                
+                fetch(`/api/table/${tableCode}/discard/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ card: selectedCard })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        selectedCard = null;
+                        hasDrawn = false;
+                        updateGameState();
+                    } else {
+                        alert(data.error || 'Failed to discard card');
+                    }
+                })
+                .catch(err => alert('Error discarding card'));
+            }
+
+            function declareWin() {
+                alert('Win declaration feature coming soon!');
+            }
+
+            // Initial update
+            updateGameState();
+        </script>
+        {% endif %}
+    </div>
+</body>
+</html>
