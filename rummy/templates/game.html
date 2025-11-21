@@ -888,6 +888,9 @@
                         <button onclick="autoArrangeGroups()" class="btn-secondary" style="flex:0;">
                             ♻️ Auto Arrange
                         </button>
+                        <button onclick="createGroupFromSelected()" class="btn-secondary" style="flex:0;">
+                            ➕ Group Selected
+                        </button>
                         <button onclick="resetGroups()" style="flex:0;">
                             🔁 Reset Layout
                         </button>
@@ -923,19 +926,21 @@
             const csrfToken = '{{ csrf_token }}';
             let hasDrawn = {{ player.has_drawn|yesno:"true,false" }};
             let isMyTurn = {{ is_my_turn|yesno:"true,false" }};
-            let selectedCardId = null;
+            let selectedCardId = null; // last clicked card (for discard)
+            let selectedCardIds = new Set(); // multiple selected for grouping
             let draggingCardId = null;
             let currentWildJoker = '{{ wild_joker|default_if_none:"" }}';
             const initialHandEl = document.getElementById('initial-hand-data');
             const initialHand = initialHandEl ? JSON.parse(initialHandEl.textContent) : [];
             let latestHandSnapshot = [...initialHand];
 
+            // Flexible groups instead of fixed "First Life / Second Life / Set 1 / Set 2"
             const GROUP_DEFS = [
-                { id: 'first-life', title: 'First Life', description: 'Pure sequence (no joker)' },
-                { id: 'second-life', title: 'Second Life', description: 'Sequence (can use joker)' },
-                { id: 'set-one', title: 'Set 1', description: 'Three/Four of a kind' },
-                { id: 'set-two', title: 'Set 2', description: 'Extra meld' },
-                { id: 'unused', title: 'Unarranged Cards', description: 'Drag cards here' },
+                { id: 'group-1', title: 'Group 1', description: 'Sequence or Set' },
+                { id: 'group-2', title: 'Group 2', description: 'Sequence or Set' },
+                { id: 'group-3', title: 'Group 3', description: 'Sequence or Set' },
+                { id: 'group-4', title: 'Group 4', description: 'Sequence or Set' },
+                { id: 'unused', title: 'Unarranged Cards', description: 'Drag / keep extra cards here' },
             ];
 
             const groupStorageKey = `rummy_groups_${tableCode}`;
@@ -1051,6 +1056,9 @@
                 if (selectedCardId && !availableIds.has(selectedCardId)) {
                     selectedCardId = null;
                 }
+                selectedCardIds = new Set(
+                    Array.from(selectedCardIds).filter(id => availableIds.has(id))
+                );
 
                 saveGroupState();
             }
@@ -1092,7 +1100,7 @@
                     column.appendChild(cardWrap);
                     board.appendChild(column);
                     
-                    // Validate the group
+                    // Validate the group (any valid sequence/set becomes green)
                     validateGroup(group.id, statusEl, column);
                 });
             }
@@ -1101,7 +1109,14 @@
                 const cards = (groupState[groupId] || []).map(id => cardRegistry[id].code);
                 
                 if (cards.length === 0) {
-                    statusEl.textContent = 'Empty';
+                    statusEl.textContent = groupId === 'unused' ? 'Unarranged' : 'Empty';
+                    statusEl.className = 'validation-status';
+                    columnEl.classList.remove('valid');
+                    return;
+                }
+
+                if (groupId === 'unused') {
+                    statusEl.textContent = 'Unarranged';
                     statusEl.className = 'validation-status';
                     columnEl.classList.remove('valid');
                     return;
@@ -1109,7 +1124,8 @@
                 
                 let isValid = false;
                 let message = 'Invalid';
-                
+
+                // Old specific mapping (kept, but IDs no longer used)
                 if (groupId === 'first-life') {
                     isValid = checkPureSequence(cards);
                     message = isValid ? 'Valid Pure Sequence' : 'Not a Pure Sequence';
@@ -1119,6 +1135,24 @@
                 } else if (groupId === 'set-one' || groupId === 'set-two') {
                     isValid = checkSet(cards);
                     message = isValid ? 'Valid Set' : 'Not a Set';
+                }
+
+                // Generic auto-detect for any group (for Group 1–4 etc.)
+                if (!isValid && groupId !== 'unused') {
+                    const isPure = checkPureSequence(cards);
+                    const isSeq = !isPure && checkSequence(cards);
+                    const isSet = !isPure && !isSeq && checkSet(cards);
+                    
+                    if (isPure) {
+                        isValid = true;
+                        message = 'Pure Sequence';
+                    } else if (isSeq) {
+                        isValid = true;
+                        message = 'Sequence';
+                    } else if (isSet) {
+                        isValid = true;
+                        message = 'Set';
+                    }
                 }
                 
                 statusEl.textContent = message;
@@ -1223,11 +1257,11 @@
                 div.textContent = formatCardLabel(card);
                 div.dataset.cardId = item.id;
                 div.dataset.groupId = groupId;
-                if (item.id === selectedCardId) {
+                if (selectedCardIds.has(item.id) || item.id === selectedCardId) {
                     div.classList.add('selected');
                 }
                 div.draggable = true;
-                div.addEventListener('click', () => selectCard(item.id));
+                div.addEventListener('click', () => toggleCardSelection(item.id));
                 div.addEventListener('dragstart', e => handleDragStart(e, item.id, groupId));
                 div.addEventListener('dragend', handleDragEnd);
                 div.addEventListener('dragover', e => handleCardDragOver(e, groupId, item.id));
@@ -1235,11 +1269,29 @@
                 return div;
             }
 
+            // Old single-select function (kept, but not used)
             function selectCard(cardId) {
                 document.querySelectorAll('[data-card-id]').forEach(el => el.classList.remove('selected'));
                 const cardEl = document.querySelector(`[data-card-id="${cardId}"]`);
                 if (!cardEl) return;
                 cardEl.classList.add('selected');
+                selectedCardId = cardId;
+                selectedCardIds = new Set([cardId]);
+                updateButtonStates();
+            }
+
+            // New multi-select by click (grouping like Junglee)
+            function toggleCardSelection(cardId) {
+                const cardEl = document.querySelector(`[data-card-id="${cardId}"]`);
+                if (!cardEl) return;
+                if (selectedCardIds.has(cardId)) {
+                    selectedCardIds.delete(cardId);
+                    cardEl.classList.remove('selected');
+                } else {
+                    selectedCardIds.add(cardId);
+                    cardEl.classList.add('selected');
+                }
+                // track last clicked for discard
                 selectedCardId = cardId;
                 updateButtonStates();
             }
@@ -1317,7 +1369,7 @@
             function autoArrangeGroups() {
                 const sorted = Object.values(cardRegistry).sort((a, b) => sortCards(a.code, b.code)).map(item => item.id);
                 const fresh = createEmptyGroupState();
-                const bucketOrder = ['first-life', 'second-life', 'set-one', 'set-two'];
+                const bucketOrder = GROUP_DEFS.filter(g => g.id !== 'unused').map(g => g.id);
                 sorted.forEach((cardId, index) => {
                     const bucketIndex = Math.min(Math.floor(index / 3), bucketOrder.length - 1);
                     const bucket = bucketOrder[bucketIndex];
@@ -1334,20 +1386,53 @@
                 renderGroups();
             }
 
+            // New: group selected cards into next empty group
+            function createGroupFromSelected() {
+                const ids = Array.from(selectedCardIds);
+                if (!ids.length) {
+                    alert('Select cards to group');
+                    return;
+                }
+                const nonUnusedGroups = GROUP_DEFS.filter(g => g.id !== 'unused').map(g => g.id);
+                let targetGroupId = null;
+                for (const gid of nonUnusedGroups) {
+                    if (!groupState[gid] || groupState[gid].length === 0) {
+                        targetGroupId = gid;
+                        break;
+                    }
+                }
+                if (!targetGroupId) {
+                    targetGroupId = nonUnusedGroups[0];
+                }
+                // remove from all groups
+                Object.keys(groupState).forEach(groupId => {
+                    groupState[groupId] = groupState[groupId].filter(id => !selectedCardIds.has(id));
+                });
+                // add to target group
+                groupState[targetGroupId] = (groupState[targetGroupId] || []).concat(ids);
+                selectedCardIds.clear();
+                selectedCardId = null;
+                saveGroupState();
+                renderGroups();
+                updateButtonStates();
+            }
+
             function resetGroups() {
                 const fresh = createEmptyGroupState();
                 Object.keys(cardRegistry).forEach(cardId => fresh['unused'].push(cardId));
                 groupState = fresh;
                 saveGroupState();
-                renderGroups();
                 selectedCardId = null;
+                selectedCardIds.clear();
+                renderGroups();
                 updateButtonStates();
             }
 
             function updateButtonStates() {
                 const discardBtn = document.getElementById('discardBtn');
+                const hasSelection = selectedCardIds.size > 0 || !!selectedCardId;
                 if (discardBtn) {
-                    discardBtn.disabled = !hasDrawn || !selectedCardId || !isMyTurn;
+                    discardBtn.disabled = !hasDrawn || !hasSelection || !isMyTurn;
                 }
             }
 
@@ -1508,8 +1593,17 @@
             }
 
             function discardSelected() {
-                if (!selectedCardId || !hasDrawn) return;
-                const info = cardRegistry[selectedCardId];
+                if (!hasDrawn) return;
+                if (!selectedCardIds.size && !selectedCardId) return;
+                let cardIdToUse = selectedCardId;
+                if (!cardIdToUse || !selectedCardIds.has(cardIdToUse)) {
+                    const iter = selectedCardIds.values().next();
+                    if (!iter.done) {
+                        cardIdToUse = iter.value;
+                    }
+                }
+                if (!cardIdToUse) return;
+                const info = cardRegistry[cardIdToUse];
                 if (!info) return;
                 
                 fetch(`/api/table/${tableCode}/discard/`, {
@@ -1524,6 +1618,7 @@
                 .then(data => {
                     if (data.success) {
                         selectedCardId = null;
+                        selectedCardIds.clear();
                         hasDrawn = false;
                         updateGameState();
                     } else {
