@@ -403,6 +403,7 @@
             justify-content: center;
             font-size: 1.2em;
             font-weight: 700;
+            color: #111827;
             cursor: pointer;
             transition: all 0.2s ease;
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
@@ -668,6 +669,9 @@
                     </div>
 
                     <div class="controls">
+                        <button onclick="toggleGrouping()" id="groupBtn">
+                            🧩 Group Cards
+                        </button>
                         <button onclick="discardSelected()" id="discardBtn" disabled>
                             🗑 Discard Selected
                         </button>
@@ -689,12 +693,16 @@
             </div>
         </div>
 
+        {{ hand|json_script:"initial-hand-data" }}
         <script>
             const tableCode = '{{ table.code }}';
             const csrfToken = '{{ csrf_token }}';
             let selectedCard = null;
             let hasDrawn = {{ player.has_drawn|yesno:"true,false" }};
             let isMyTurn = {{ is_my_turn|yesno:"true,false" }};
+            const initialHandEl = document.getElementById('initial-hand-data');
+            let currentHand = initialHandEl ? JSON.parse(initialHandEl.textContent) : [];
+            let isGroupedView = false;
 
             // Poll for game state updates
             setInterval(updateGameState, 2000);
@@ -764,6 +772,12 @@
             }
 
             function updateHand(cards) {
+                currentHand = [...cards];
+                const displayCards = isGroupedView ? groupHand(cards) : cards;
+                renderHand(displayCards);
+            }
+
+            function renderHand(cards) {
                 const container = document.getElementById('handCards');
                 if (!container) return;
                 container.innerHTML = '';
@@ -774,6 +788,9 @@
                     div.setAttribute('data-card', card);
                     div.onclick = () => selectCard(card);
                     div.textContent = card;
+                    if (card === selectedCard) {
+                        div.classList.add('selected');
+                    }
                     container.appendChild(div);
                 });
             }
@@ -795,6 +812,50 @@
                 if (discardBtn) {
                     discardBtn.disabled = !hasDrawn || !selectedCard || !isMyTurn;
                 }
+                const groupBtn = document.getElementById('groupBtn');
+                if (groupBtn) {
+                    groupBtn.disabled = !currentHand.length;
+                    groupBtn.textContent = isGroupedView ? '🔄 Ungroup Cards' : '🧩 Group Cards';
+                }
+            }
+
+            function toggleGrouping() {
+                if (!currentHand.length) return;
+                isGroupedView = !isGroupedView;
+                const cardsToRender = isGroupedView ? groupHand(currentHand) : currentHand;
+                renderHand(cardsToRender);
+                updateButtonStates();
+            }
+
+            function groupHand(cards) {
+                const rankOrder = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+                const suitOrder = ['♣','♦','♥','♠'];
+
+                const rankValue = (card) => {
+                    const rank = getRank(card);
+                    const idx = rankOrder.indexOf(rank);
+                    return idx === -1 ? rankOrder.length : idx;
+                };
+
+                const suitValue = (card) => {
+                    const suit = getSuit(card);
+                    const idx = suitOrder.indexOf(suit);
+                    return idx === -1 ? suitOrder.length : idx;
+                };
+
+                return [...cards].sort((a, b) => {
+                    const rankDiff = rankValue(a) - rankValue(b);
+                    if (rankDiff !== 0) return rankDiff;
+                    return suitValue(a) - suitValue(b);
+                });
+            }
+
+            function getRank(card) {
+                return card.slice(0, -1);
+            }
+
+            function getSuit(card) {
+                return card.slice(-1);
             }
 
             function startGame() {
@@ -892,6 +953,10 @@
 
             // Initial update
             updateGameState();
+            if (currentHand.length) {
+                updateHand(currentHand);
+                updateButtonStates();
+            }
         </script>
         {% endif %}
     </div>
