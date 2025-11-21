@@ -13,4 +13,5 @@ urlpatterns = [
     path('api/table/<str:code>/draw/', views.draw_card, name='draw_card'),
     path('api/table/<str:code>/discard/', views.discard_card, name='discard_card'),
     path('api/table/<str:code>/state/', views.game_state, name='game_state'),
+    path('api/table/<str:code>/declare/', views.declare, name='declare'),
 ]

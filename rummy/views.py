@@ -5,9 +5,10 @@ from .models import GameTable, Player
 from .game_utils import (
     generate_deck, deal_cards, to_json, from_json,
     check_sequence, check_set, calculate_hand_value,
-    choose_wild_joker
+    choose_wild_joker, validate_full_hand
 )
 import random, string, json
+
 
 def make_session(request):
     """Create or get session ID"""
@@ -17,9 +18,11 @@ def make_session(request):
         request.session["sid"] = sid
     return sid
 
+
 def example(request):
     """Home page"""
     return render(request, "game.html", {"page": "home"})
+
 
 def create_table(request):
     """Create a new game table"""
@@ -48,7 +51,7 @@ def create_table(request):
         table.set_discard_pile([])
         table.save()
         
-        # 👉 IMPORTANT FIX: Save owner's 13 cards properly
+        # Save owner's 13 cards
         owner = Player.objects.create(
             table=table,
             name=name,
@@ -62,6 +65,7 @@ def create_table(request):
         return redirect("table_screen", code=table_code)
     
     return render(request, "game.html", {"page": "create"})
+
 
 def join_table(request):
     """Join an existing table"""
@@ -126,6 +130,7 @@ def join_table(request):
     
     return render(request, "game.html", {"page": "join"})
 
+
 def table_screen(request, code):
     """Main game screen"""
     sid = make_session(request)
@@ -160,6 +165,7 @@ def table_screen(request, code):
     
     return render(request, "game.html", context)
 
+
 @require_http_methods(["POST"])
 def start_game(request, code):
     """Start the game"""
@@ -178,6 +184,7 @@ def start_game(request, code):
     table.save()
     
     return JsonResponse({"success": True})
+
 
 @require_http_methods(["POST"])
 def draw_card(request, code):
@@ -220,6 +227,7 @@ def draw_card(request, code):
     
     return JsonResponse({"success": True, "card": card})
 
+
 @require_http_methods(["POST"])
 def discard_card(request, code):
     """Discard a card"""
@@ -255,6 +263,7 @@ def discard_card(request, code):
     
     return JsonResponse({"success": True})
 
+
 @require_http_methods(["GET"])
 def game_state(request, code):
     """Get current game state"""
@@ -287,3 +296,40 @@ def game_state(request, code):
         "my_hand": player.get_hand(),
         "has_drawn": player.has_drawn
     })
+
+
+@require_http_methods(["POST"])
+def declare(request, code):
+    """
+    Declare win: frontend sends grouped cards.
+    Validates full 13-card hand using rummy rules.
+    """
+    sid = make_session(request)
+    table = get_object_or_404(GameTable, code=code)
+    player = get_object_or_404(Player, table=table, session_id=sid)
+
+    if table.status != "playing":
+        return JsonResponse({"success": False, "error": "Game is not in playing state"}, status=400)
+
+    # Must be player's turn
+    players = list(table.players.all())
+    if players[table.current_turn].id != player.id:
+        return JsonResponse({"success": False, "error": "Not your turn"}, status=403)
+
+    data = json.loads(request.body or "{}")
+    groups = data.get("groups") or []
+
+    ok, msg = validate_full_hand(groups, table.wild_joker)
+
+    if not ok:
+        return JsonResponse({"success": False, "error": msg}, status=400)
+
+    # If valid, finish game – winner is this player
+    table.status = "finished"
+    table.save()
+
+    # You could also update scores for others here.
+    player.score = 0
+    player.save()
+
+    return JsonResponse({"success": True, "message": "Valid declaration! You win."})
