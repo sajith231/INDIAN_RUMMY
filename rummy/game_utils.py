@@ -260,4 +260,9 @@ def validate_full_hand(groups, wild_joker):
         return False, "You must use exactly 13 cards"
 
     if pure_count < 1:
-        return False, "A
+        return False, "At least one pure sequence required"
+
+    if pure_count + seq_count < 2:
+        return False, "At least two sequences required"
+
+    return True, "Valid hand"
