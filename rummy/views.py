@@ -45,14 +45,16 @@ def create_table(request):
         table.set_discard_pile([])
         table.save()
         
-        # Create owner player
-        Player.objects.create(
+        # 👉 IMPORTANT FIX: Save owner's 13 cards properly
+        owner = Player.objects.create(
             table=table,
             name=name,
             session_id=sid,
             is_owner=True,
             position=0
-        ).set_hand(hand)
+        )
+        owner.set_hand(hand)
+        owner.save()
         
         return redirect("table_screen", code=table_code)
     
@@ -87,7 +89,7 @@ def join_table(request):
                 "error": "Table is full"
             })
         
-        # Check if already joined
+        # Check if already joined from this device
         existing = Player.objects.filter(table=table, session_id=sid).first()
         if existing:
             return redirect("table_screen", code=code)
