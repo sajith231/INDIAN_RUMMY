@@ -5,6 +5,7 @@ class GameTable(models.Model):
     code = models.CharField(max_length=6, unique=True)
     deck_json = models.TextField(null=True, blank=True)
     discard_pile_json = models.TextField(null=True, blank=True)
+    wild_joker = models.CharField(max_length=10, null=True, blank=True)
     status = models.CharField(max_length=20, default="waiting")
     current_turn = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)

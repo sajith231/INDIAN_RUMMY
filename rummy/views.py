@@ -4,7 +4,8 @@ from django.views.decorators.http import require_http_methods
 from .models import GameTable, Player
 from .game_utils import (
     generate_deck, deal_cards, to_json, from_json,
-    check_sequence, check_set, calculate_hand_value
+    check_sequence, check_set, calculate_hand_value,
+    choose_wild_joker
 )
 import random, string, json
 
@@ -34,12 +35,14 @@ def create_table(request):
         
         # Create deck and deal cards
         deck = generate_deck()
+        wild_joker = choose_wild_joker(deck)
         hand, rem = deal_cards(deck, 13)
         
         # Create table
         table = GameTable.objects.create(
             code=table_code,
-            status="waiting"
+            status="waiting",
+            wild_joker=wild_joker
         )
         table.set_deck(rem)
         table.set_discard_pile([])
@@ -96,6 +99,8 @@ def join_table(request):
         
         # Deal cards
         deck = table.get_deck()
+        if not table.wild_joker:
+            table.wild_joker = choose_wild_joker(deck)
         if len(deck) < 13:
             return render(request, "game.html", {
                 "page": "join",
@@ -147,6 +152,7 @@ def table_screen(request, code):
         "player": player,
         "players": players,
         "hand": hand,
+        "wild_joker": table.wild_joker,
         "top_discard": top_discard,
         "is_my_turn": is_my_turn,
         "deck_count": len(table.get_deck())
@@ -276,6 +282,7 @@ def game_state(request, code):
         "current_turn": table.current_turn,
         "deck_count": len(table.get_deck()),
         "top_discard": discard_pile[-1] if discard_pile else None,
+        "wild_joker": table.wild_joker,
         "players": players_data,
         "my_hand": player.get_hand(),
         "has_drawn": player.has_drawn

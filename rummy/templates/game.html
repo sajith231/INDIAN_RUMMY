@@ -294,6 +294,22 @@
             font-size: 0.9em;
         }
 
+        .joker-info {
+            text-align: center;
+            max-width: 160px;
+        }
+
+        .joker-info .pile-label {
+            color: #fef3c7;
+        }
+
+        .joker-info small {
+            display: block;
+            margin-top: 6px;
+            color: #fcd34d;
+            font-size: 0.75em;
+        }
+
         .card-back, .card-front {
             width: 80px;
             height: 112px;
@@ -404,26 +420,124 @@
             font-size: 1.2em;
             font-weight: 700;
             color: #111827;
-            cursor: pointer;
+            cursor: grab;
             transition: all 0.2s ease;
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
             position: relative;
+            user-select: none;
+        }
+
+        .card:active {
+            cursor: grabbing;
         }
 
         .card:hover {
-            transform: translateY(-10px);
+            transform: translateY(-6px);
             box-shadow: 0 12px 24px rgba(0, 0, 0, 0.8);
         }
 
         .card.selected {
-            transform: translateY(-14px) scale(1.03);
+            transform: translateY(-8px) scale(1.03);
             border-color: #22c55e;
             box-shadow: 0 14px 30px rgba(34, 197, 94, 0.7);
+        }
+
+        .card.dragging {
+            opacity: 0.6;
         }
 
         .card.red {
             color: #b91c1c;
             border-color: #b91c1c;
+        }
+
+        .card.joker {
+            background: linear-gradient(135deg, #1f2937, #111827);
+            color: #fbbf24;
+            border-color: #fbbf24;
+        }
+
+        .card.wild {
+            border-color: #eab308;
+            box-shadow: 0 12px 24px rgba(234, 179, 8, 0.4);
+        }
+
+        .group-toolbar {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-bottom: 12px;
+        }
+
+        .group-board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+            margin-top: 12px;
+        }
+
+        .group-column {
+            background: rgba(3, 7, 18, 0.65);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 14px;
+            padding: 12px;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .group-column.drop-target {
+            border-color: #22c55e;
+            box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.3);
+        }
+
+        .group-header {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .group-header strong {
+            font-size: 0.9em;
+            color: #f8fafc;
+        }
+
+        .group-header span {
+            font-size: 0.75em;
+            color: #94a3b8;
+        }
+
+        .group-cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 110px;
+        }
+
+        .joker-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(234, 179, 8, 0.15);
+            border: 1px solid rgba(250, 204, 21, 0.4);
+            color: #fef3c7;
+            font-size: 0.85em;
+        }
+
+        .joker-card-preview {
+            width: 72px;
+            height: 100px;
+            border-radius: 10px;
+            border: 2px dashed rgba(234, 179, 8, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1em;
+            color: #fbbf24;
+            margin-top: 8px;
         }
 
         .controls {
@@ -650,6 +764,24 @@
                         <div class="card-front empty-pile" id="discardPile">Empty</div>
                         {% endif %}
                     </div>
+
+                    <div class="joker-info">
+                        <div class="pile-label">Wild Joker</div>
+                        <div class="joker-card-preview" id="wildJokerPreview">
+                            {% if wild_joker %}
+                                {{ wild_joker }}
+                            {% else %}
+                                TBD
+                            {% endif %}
+                        </div>
+                        <small id="jokerHint">
+                            {% if wild_joker %}
+                                All {{ wild_joker|slice:':-1' }}'s act as jokers
+                            {% else %}
+                                Revealed when game starts
+                            {% endif %}
+                        </small>
+                    </div>
                 </div>
 
                 <div class="hand-area">
@@ -658,20 +790,18 @@
                         <span id="turnIndicator"></span>
                     </div>
                     
-                    <div class="cards-container" id="handCards">
-                        {% for card in hand %}
-                        <div class="card {% if card|slice:'-1:' in '♥♦' %}red{% endif %}" 
-                             onclick="selectCard('{{ card }}')" 
-                             data-card="{{ card }}">
-                            {{ card }}
-                        </div>
-                        {% endfor %}
+                    <div class="group-toolbar">
+                        <button onclick="autoArrangeGroups()" class="btn-secondary" style="flex:0;">
+                            ♻️ Auto Arrange
+                        </button>
+                        <button onclick="resetGroups()" style="flex:0;">
+                            🔁 Reset Layout
+                        </button>
                     </div>
 
+                    <div class="group-board" id="groupBoard"></div>
+
                     <div class="controls">
-                        <button onclick="toggleGrouping()" id="groupBtn">
-                            🧩 Group Cards
-                        </button>
                         <button onclick="discardSelected()" id="discardBtn" disabled>
                             🗑 Discard Selected
                         </button>
@@ -697,15 +827,33 @@
         <script>
             const tableCode = '{{ table.code }}';
             const csrfToken = '{{ csrf_token }}';
-            let selectedCard = null;
             let hasDrawn = {{ player.has_drawn|yesno:"true,false" }};
             let isMyTurn = {{ is_my_turn|yesno:"true,false" }};
+            let selectedCardId = null;
+            let draggingCardId = null;
+            let currentWildJoker = '{{ wild_joker|default_if_none:"" }}';
             const initialHandEl = document.getElementById('initial-hand-data');
-            let currentHand = initialHandEl ? JSON.parse(initialHandEl.textContent) : [];
-            let isGroupedView = false;
+            const initialHand = initialHandEl ? JSON.parse(initialHandEl.textContent) : [];
+            let latestHandSnapshot = [...initialHand];
+
+            const GROUP_DEFS = [
+                { id: 'first-life', title: 'First Life', description: 'Pure sequence' },
+                { id: 'second-life', title: 'Second Life', description: 'Second sequence' },
+                { id: 'set-one', title: 'Trio / Set 1', description: 'Three of a kind' },
+                { id: 'set-two', title: 'Set 2 / Reserve', description: 'Extra meld' },
+                { id: 'unused', title: 'Unarranged Cards', description: 'Drag cards here' },
+            ];
+
+            const groupStorageKey = `rummy_groups_${tableCode}`;
+            let groupState = loadGroupState();
+            let cardRegistry = {};
 
             // Poll for game state updates
             setInterval(updateGameState, 2000);
+
+            hydrateHand(initialHand);
+            updateButtonStates();
+            setWildJokerDisplay(currentWildJoker);
 
             function updateGameState() {
                 fetch(`/api/table/${tableCode}/state/`)
@@ -713,18 +861,12 @@
                     .then(data => {
                         if (data.error) return;
 
-                        // Update status
                         const statusEl = document.getElementById('gameStatus');
-                        if (statusEl) {
-                            statusEl.textContent = data.status;
-                        }
+                        if (statusEl) statusEl.textContent = data.status;
 
                         const deckEl = document.getElementById('deckCount');
-                        if (deckEl) {
-                            deckEl.textContent = data.deck_count;
-                        }
+                        if (deckEl) deckEl.textContent = data.deck_count;
 
-                        // Update players
                         data.players.forEach(p => {
                             const cardEl = document.querySelector(`[data-player-id="${p.id}"]`);
                             if (cardEl) {
@@ -734,22 +876,24 @@
                             }
                         });
 
-                        // Update hand
                         if (data.my_hand) {
-                            updateHand(data.my_hand);
+                            hydrateHand(data.my_hand);
                         }
 
-                        // Update discard pile
+                        if (data.wild_joker !== undefined) {
+                            currentWildJoker = data.wild_joker || '';
+                            setWildJokerDisplay(currentWildJoker);
+                        }
+
                         if (data.top_discard) {
                             const pile = document.getElementById('discardPile');
                             if (pile) {
                                 const isRed = data.top_discard.includes('♥') || data.top_discard.includes('♦');
                                 pile.className = `card-front ${isRed ? 'red' : ''}`;
-                                pile.textContent = data.top_discard;
+                                pile.textContent = formatCardLabel(data.top_discard);
                             }
                         }
 
-                        // Update turn indicator
                         const me = data.players.find(p => p.is_me);
                         const myTurn = me ? me.is_turn : false;
                         isMyTurn = myTurn;
@@ -760,10 +904,8 @@
                             indicator.innerHTML = myTurn ? '<span class="turn-indicator">Your Turn</span>' : '';
                         }
 
-                        // Update button states
                         updateButtonStates();
 
-                        // Reload page if status changed to playing
                         if (data.status === 'playing' && document.getElementById('startBtn')) {
                             location.reload();
                         }
@@ -771,91 +913,317 @@
                     .catch(err => console.error('Error updating game state:', err));
             }
 
-            function updateHand(cards) {
-                currentHand = [...cards];
-                const displayCards = isGroupedView ? groupHand(cards) : cards;
-                renderHand(displayCards);
+            function hydrateHand(cards) {
+                latestHandSnapshot = [...cards];
+                syncCardRegistry(cards);
+                renderGroups();
+                updateButtonStates();
             }
 
-            function renderHand(cards) {
-                const container = document.getElementById('handCards');
-                if (!container) return;
-                container.innerHTML = '';
-                cards.forEach(card => {
-                    const isRed = card.includes('♥') || card.includes('♦');
-                    const div = document.createElement('div');
-                    div.className = `card ${isRed ? 'red' : ''}`;
-                    div.setAttribute('data-card', card);
-                    div.onclick = () => selectCard(card);
-                    div.textContent = card;
-                    if (card === selectedCard) {
-                        div.classList.add('selected');
-                    }
-                    container.appendChild(div);
+            function buildCardInstances(cards) {
+                const seen = {};
+                return cards.map(card => {
+                    seen[card] = (seen[card] || 0) + 1;
+                    return {
+                        id: `${card}-${seen[card]}`,
+                        code: card
+                    };
                 });
             }
 
-            function selectCard(card) {
-                if (!hasDrawn) return;
-                
-                document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
-                const cardEl = document.querySelector(`[data-card="${card}"]`);
-                if (cardEl) {
-                    cardEl.classList.add('selected');
-                    selectedCard = card;
-                    updateButtonStates();
+            function syncCardRegistry(cards) {
+                const instances = buildCardInstances(cards);
+                const newRegistry = {};
+                const availableIds = new Set();
+
+                instances.forEach(instance => {
+                    newRegistry[instance.id] = instance;
+                    availableIds.add(instance.id);
+                });
+
+                cardRegistry = newRegistry;
+
+                Object.keys(groupState).forEach(groupId => {
+                    groupState[groupId] = groupState[groupId].filter(cardId => availableIds.has(cardId));
+                });
+
+                instances.forEach(instance => {
+                    const alreadyPlaced = Object.values(groupState).some(arr => arr.includes(instance.id));
+                    if (!alreadyPlaced) {
+                        groupState['unused'].push(instance.id);
+                    }
+                });
+
+                if (selectedCardId && !availableIds.has(selectedCardId)) {
+                    selectedCardId = null;
                 }
+
+                saveGroupState();
+            }
+
+            function renderGroups() {
+                const board = document.getElementById('groupBoard');
+                if (!board) return;
+                board.innerHTML = '';
+
+                GROUP_DEFS.forEach(group => {
+                    const column = document.createElement('div');
+                    column.className = 'group-column';
+                    column.dataset.groupId = group.id;
+
+                    const header = document.createElement('div');
+                    header.className = 'group-header';
+                    header.innerHTML = `<strong>${group.title}</strong><span>${group.description}</span>`;
+
+                    const cardWrap = document.createElement('div');
+                    cardWrap.className = 'group-cards';
+                    cardWrap.dataset.groupId = group.id;
+                    cardWrap.addEventListener('dragover', e => handleGroupDragOver(e, group.id));
+                    cardWrap.addEventListener('dragleave', e => handleGroupDragLeave(e, group.id));
+                    cardWrap.addEventListener('drop', e => handleGroupDrop(e, group.id));
+
+                    (groupState[group.id] || []).forEach(cardId => {
+                        const item = cardRegistry[cardId];
+                        if (!item) return;
+                        const cardEl = createCardElement(item, group.id);
+                        cardWrap.appendChild(cardEl);
+                    });
+
+                    column.appendChild(header);
+                    column.appendChild(cardWrap);
+                    board.appendChild(column);
+                });
+            }
+
+            function createCardElement(item, groupId) {
+                const div = document.createElement('div');
+                const card = item.code;
+                const isRed = card.includes('♥') || card.includes('♦');
+                const classes = ['card'];
+                if (isRed) classes.push('red');
+                if (isPrintedJoker(card) || isWildCard(card)) classes.push('joker');
+                if (!isPrintedJoker(card) && isWildCard(card)) classes.push('wild');
+                div.className = classes.join(' ');
+                div.textContent = formatCardLabel(card);
+                div.dataset.cardId = item.id;
+                div.dataset.groupId = groupId;
+                if (item.id === selectedCardId) {
+                    div.classList.add('selected');
+                }
+                div.draggable = true;
+                div.addEventListener('click', () => selectCard(item.id));
+                div.addEventListener('dragstart', e => handleDragStart(e, item.id, groupId));
+                div.addEventListener('dragend', handleDragEnd);
+                div.addEventListener('dragover', e => handleCardDragOver(e, groupId, item.id));
+                div.addEventListener('drop', e => handleCardDrop(e, groupId, item.id));
+                return div;
+            }
+
+            function selectCard(cardId) {
+                document.querySelectorAll('[data-card-id]').forEach(el => el.classList.remove('selected'));
+                const cardEl = document.querySelector(`[data-card-id="${cardId}"]`);
+                if (!cardEl) return;
+                cardEl.classList.add('selected');
+                selectedCardId = cardId;
+                updateButtonStates();
+            }
+
+            function handleDragStart(event, cardId, groupId) {
+                draggingCardId = cardId;
+                event.dataTransfer.setData('text/plain', cardId);
+                event.dataTransfer.effectAllowed = 'move';
+                const cardEl = document.querySelector(`[data-card-id="${cardId}"]`);
+                if (cardEl) {
+                    cardEl.classList.add('dragging');
+                }
+            }
+
+            function handleDragEnd(event) {
+                draggingCardId = null;
+                document.querySelectorAll('.card.dragging').forEach(el => el.classList.remove('dragging'));
+                document.querySelectorAll('.group-column').forEach(col => col.classList.remove('drop-target'));
+            }
+
+            function handleGroupDragOver(event, groupId) {
+                event.preventDefault();
+                const column = document.querySelector(`.group-column[data-group-id="${groupId}"]`);
+                if (column) column.classList.add('drop-target');
+            }
+
+            function handleGroupDragLeave(event, groupId) {
+                const column = document.querySelector(`.group-column[data-group-id="${groupId}"]`);
+                if (column) column.classList.remove('drop-target');
+            }
+
+            function handleGroupDrop(event, groupId) {
+                event.preventDefault();
+                handleMoveCard(draggingCardId, groupId);
+                handleGroupDragLeave(event, groupId);
+            }
+
+            function handleCardDragOver(event, groupId, targetCardId) {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+            }
+
+            function handleCardDrop(event, groupId, targetCardId) {
+                event.preventDefault();
+                const cardId = draggingCardId;
+                handleMoveCard(cardId, groupId, targetCardId);
+            }
+
+            function handleMoveCard(cardId, targetGroupId, beforeCardId = null) {
+                if (!cardId || !cardRegistry[cardId]) return;
+                const currentGroupId = findGroupForCard(cardId);
+                if (currentGroupId) {
+                    groupState[currentGroupId] = groupState[currentGroupId].filter(id => id !== cardId);
+                }
+                const targetGroup = groupState[targetGroupId] || [];
+                if (beforeCardId) {
+                    const insertIndex = targetGroup.indexOf(beforeCardId);
+                    if (insertIndex === -1) {
+                        targetGroup.push(cardId);
+                    } else {
+                        targetGroup.splice(insertIndex, 0, cardId);
+                    }
+                } else {
+                    targetGroup.push(cardId);
+                }
+                groupState[targetGroupId] = targetGroup;
+                saveGroupState();
+                renderGroups();
+            }
+
+            function findGroupForCard(cardId) {
+                return Object.keys(groupState).find(groupId => groupState[groupId].includes(cardId));
+            }
+
+            function autoArrangeGroups() {
+                const sorted = Object.values(cardRegistry).sort((a, b) => sortCards(a.code, b.code)).map(item => item.id);
+                const fresh = createEmptyGroupState();
+                const bucketOrder = ['first-life', 'second-life', 'set-one', 'set-two'];
+                sorted.forEach((cardId, index) => {
+                    const bucketIndex = Math.min(Math.floor(index / 3), bucketOrder.length - 1);
+                    const bucket = bucketOrder[bucketIndex];
+                    fresh[bucket].push(cardId);
+                });
+                const placed = new Set(bucketOrder.flatMap(bucket => fresh[bucket]));
+                sorted.forEach(cardId => {
+                    if (!placed.has(cardId)) {
+                        fresh['unused'].push(cardId);
+                    }
+                });
+                groupState = fresh;
+                saveGroupState();
+                renderGroups();
+            }
+
+            function resetGroups() {
+                const fresh = createEmptyGroupState();
+                Object.keys(cardRegistry).forEach(cardId => fresh['unused'].push(cardId));
+                groupState = fresh;
+                saveGroupState();
+                renderGroups();
+                selectedCardId = null;
+                updateButtonStates();
             }
 
             function updateButtonStates() {
                 const discardBtn = document.getElementById('discardBtn');
                 if (discardBtn) {
-                    discardBtn.disabled = !hasDrawn || !selectedCard || !isMyTurn;
-                }
-                const groupBtn = document.getElementById('groupBtn');
-                if (groupBtn) {
-                    groupBtn.disabled = !currentHand.length;
-                    groupBtn.textContent = isGroupedView ? '🔄 Ungroup Cards' : '🧩 Group Cards';
+                    discardBtn.disabled = !hasDrawn || !selectedCardId || !isMyTurn;
                 }
             }
 
-            function toggleGrouping() {
-                if (!currentHand.length) return;
-                isGroupedView = !isGroupedView;
-                const cardsToRender = isGroupedView ? groupHand(currentHand) : currentHand;
-                renderHand(cardsToRender);
-                updateButtonStates();
+            function loadGroupState() {
+                try {
+                    const raw = localStorage.getItem(groupStorageKey);
+                    if (!raw) return createEmptyGroupState();
+                    const parsed = JSON.parse(raw);
+                    return ensureGroupStructure(parsed);
+                } catch {
+                    return createEmptyGroupState();
+                }
             }
 
-            function groupHand(cards) {
+            function saveGroupState() {
+                try {
+                    localStorage.setItem(groupStorageKey, JSON.stringify(groupState));
+                } catch {
+                    // ignore write errors
+                }
+            }
+
+            function ensureGroupStructure(state) {
+                const scaffold = createEmptyGroupState();
+                Object.keys(scaffold).forEach(key => {
+                    scaffold[key] = Array.isArray(state[key]) ? [...state[key]] : [];
+                });
+                return scaffold;
+            }
+
+            function createEmptyGroupState() {
+                const state = {};
+                GROUP_DEFS.forEach(group => {
+                    state[group.id] = [];
+                });
+                return state;
+            }
+
+            function sortCards(a, b) {
                 const rankOrder = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
                 const suitOrder = ['♣','♦','♥','♠'];
-
-                const rankValue = (card) => {
-                    const rank = getRank(card);
-                    const idx = rankOrder.indexOf(rank);
+                const getRankIndex = card => {
+                    const idx = rankOrder.indexOf(getRank(card));
                     return idx === -1 ? rankOrder.length : idx;
                 };
-
-                const suitValue = (card) => {
-                    const suit = getSuit(card);
-                    const idx = suitOrder.indexOf(suit);
+                const getSuitIndex = card => {
+                    const idx = suitOrder.indexOf(getSuit(card));
                     return idx === -1 ? suitOrder.length : idx;
                 };
-
-                return [...cards].sort((a, b) => {
-                    const rankDiff = rankValue(a) - rankValue(b);
-                    if (rankDiff !== 0) return rankDiff;
-                    return suitValue(a) - suitValue(b);
-                });
+                const rankDiff = getRankIndex(a) - getRankIndex(b);
+                if (rankDiff !== 0) return rankDiff;
+                return getSuitIndex(a) - getSuitIndex(b);
             }
 
             function getRank(card) {
+                if (!card || card.startsWith('JOKER')) return card || '';
                 return card.slice(0, -1);
             }
 
             function getSuit(card) {
+                if (!card || card.startsWith('JOKER')) return '';
                 return card.slice(-1);
+            }
+
+            function isPrintedJoker(card) {
+                return card && card.startsWith('JOKER');
+            }
+
+            function isWildCard(card) {
+                if (!currentWildJoker) return false;
+                if (isPrintedJoker(card)) return true;
+                return getRank(card) === getRank(currentWildJoker);
+            }
+
+            function formatCardLabel(card) {
+                if (card && card.startsWith('JOKER')) {
+                    return '🃏';
+                }
+                return card;
+            }
+
+            function setWildJokerDisplay(card) {
+                const preview = document.getElementById('wildJokerPreview');
+                const hint = document.getElementById('jokerHint');
+                if (!preview || !hint) return;
+                if (card) {
+                    preview.textContent = card.startsWith('JOKER') ? '🃏' : card;
+                    hint.textContent = `All ${getRank(card)}'s act as jokers`;
+                } else {
+                    preview.textContent = 'TBD';
+                    hint.textContent = 'Revealed when game starts';
+                }
             }
 
             function startGame() {
@@ -924,7 +1292,9 @@
             }
 
             function discardSelected() {
-                if (!selectedCard || !hasDrawn) return;
+                if (!selectedCardId || !hasDrawn) return;
+                const info = cardRegistry[selectedCardId];
+                if (!info) return;
                 
                 fetch(`/api/table/${tableCode}/discard/`, {
                     method: 'POST',
@@ -932,12 +1302,12 @@
                         'X-CSRFToken': csrfToken,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ card: selectedCard })
+                    body: JSON.stringify({ card: info.code })
                 })
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        selectedCard = null;
+                        selectedCardId = null;
                         hasDrawn = false;
                         updateGameState();
                     } else {
@@ -951,12 +1321,7 @@
                 alert('Win declaration feature coming soon!');
             }
 
-            // Initial update
             updateGameState();
-            if (currentHand.length) {
-                updateHand(currentHand);
-                updateButtonStates();
-            }
         </script>
         {% endif %}
     </div>
