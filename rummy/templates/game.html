@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Indian Rummy - 13 Cards</title>
+    <title>Junglee Rummy - 13 Card Game</title>
     <style>
         * {
             margin: 0;
@@ -13,13 +13,13 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: radial-gradient(circle at top, #1b263b 0%, #000814 50%, #000000 100%);
+            background: linear-gradient(135deg, #1a472a 0%, #0f2d1d 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
-            color: #f1f5f9;
+            color: #fff;
         }
 
         .container {
@@ -28,38 +28,53 @@
         }
 
         .card-container {
-            background: rgba(15, 23, 42, 0.96);
+            background: linear-gradient(145deg, #2d5a3d 0%, #1e3a29 100%);
             border-radius: 20px;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.7);
-            padding: 30px 30px 35px;
-            border: 1px solid rgba(148, 163, 184, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            padding: 30px;
+            border: 2px solid #4a7c59;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: linear-gradient(90deg, #f9a825, #ffeb3b, #f9a825);
+            border-radius: 20px 20px 0 0;
         }
 
         h1 {
-            color: #facc15;
+            color: #ffeb3b;
             text-align: center;
-            margin-bottom: 6px;
-            font-size: 2.3em;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
             letter-spacing: 1px;
         }
 
         h2 {
-            color: #e5e7eb;
+            color: #ffeb3b;
             margin-bottom: 20px;
-            font-size: 1.9em;
+            font-size: 1.8em;
+            text-align: center;
         }
 
         h3 {
-            color: #e5e7eb;
+            color: #ffeb3b;
             margin-bottom: 15px;
-            font-size: 1.2em;
+            font-size: 1.3em;
         }
 
         .subtitle {
             text-align: center;
-            color: #9ca3af;
+            color: #c8e6c9;
             margin-bottom: 30px;
-            font-size: 1.05em;
+            font-size: 1.1em;
         }
 
         .btn-group {
@@ -69,217 +84,209 @@
         }
 
         button, .btn {
-            background: linear-gradient(135deg, #22c55e 0%, #16a34a 40%, #22c55e 100%);
-            color: white;
+            background: linear-gradient(135deg, #f9a825 0%, #ffeb3b 100%);
+            color: #1a472a;
             border: none;
-            padding: 13px 26px;
-            font-size: 15px;
-            border-radius: 999px;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 50px;
             cursor: pointer;
-            transition: all 0.25s ease;
-            font-weight: 600;
+            transition: all 0.3s ease;
+            font-weight: 700;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
             flex: 1;
-            box-shadow: 0 10px 25px rgba(34, 197, 94, 0.35);
+            box-shadow: 0 4px 15px rgba(249, 168, 37, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         button:hover, .btn:hover {
-            transform: translateY(-1px) scale(1.01);
-            box-shadow: 0 14px 30px rgba(34, 197, 94, 0.5);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(249, 168, 37, 0.6);
         }
 
         button:active, .btn:active {
             transform: translateY(0);
-            box-shadow: 0 6px 18px rgba(34, 197, 94, 0.35);
         }
 
         button:disabled {
-            background: #4b5563;
+            background: #78909c;
             box-shadow: none;
             cursor: not-allowed;
             transform: none;
         }
 
         .btn-secondary {
-            background: linear-gradient(135deg, #0ea5e9 0%, #1d4ed8 40%, #0ea5e9 100%);
-            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.35);
+            background: linear-gradient(135deg, #26a69a 0%, #4db6ac 100%);
+            box-shadow: 0 4px 15px rgba(38, 166, 154, 0.4);
         }
 
         .btn-success {
-            background: linear-gradient(135deg, #22c55e 0%, #16a34a 40%, #22c55e 100%);
+            background: linear-gradient(135deg, #43a047 0%, #66bb6a 100%);
+            box-shadow: 0 4px 15px rgba(67, 160, 71, 0.4);
         }
 
         .form-group {
-            margin-bottom: 18px;
+            margin-bottom: 20px;
         }
 
         label {
             display: block;
-            margin-bottom: 6px;
-            color: #e5e7eb;
-            font-weight: 500;
-            font-size: 0.95em;
+            margin-bottom: 8px;
+            color: #e8f5e9;
+            font-weight: 600;
+            font-size: 1em;
         }
 
         input[type="text"] {
             width: 100%;
-            padding: 11px 14px;
-            border-radius: 999px;
-            border: 1px solid #4b5563;
-            background-color: #020617;
-            color: #e5e7eb;
-            font-size: 15px;
+            padding: 15px 20px;
+            border-radius: 50px;
+            border: 2px solid #4a7c59;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 16px;
             outline: none;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
         }
 
         input[type="text"]::placeholder {
-            color: #6b7280;
+            color: #a5d6a7;
         }
 
         input[type="text"]:focus {
-            border-color: #22c55e;
-            box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.4);
+            border-color: #ffeb3b;
+            box-shadow: 0 0 0 3px rgba(255, 235, 59, 0.3);
         }
 
         .error {
-            background: rgba(248, 113, 113, 0.1);
-            color: #fecaca;
-            padding: 10px 14px;
+            background: rgba(244, 67, 54, 0.2);
+            color: #ffcdd2;
+            padding: 12px 20px;
             border-radius: 10px;
-            margin-bottom: 18px;
-            border-left: 4px solid #f87171;
-            font-size: 0.9em;
+            margin-bottom: 20px;
+            border-left: 4px solid #f44336;
+            font-size: 0.95em;
         }
 
         /* Game Header & Table Info */
         .game-header {
-            background: radial-gradient(circle at top, #15803d 0%, #064e3b 55%, #022c22 100%);
+            background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
             color: white;
-            padding: 16px 20px;
-            border-radius: 16px;
-            margin-bottom: 18px;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border: 1px solid rgba(22, 163, 74, 0.6);
-            box-shadow: 0 20px 40px rgba(22, 163, 74, 0.35);
+            border: 2px solid #4caf50;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
         }
 
         .table-code {
-            font-size: 1.4em;
+            font-size: 1.6em;
             font-weight: 700;
             letter-spacing: 1px;
         }
 
         .game-meta {
-            font-size: 0.85em;
-            color: #d1fae5;
+            font-size: 0.9em;
+            color: #c8e6c9;
         }
 
         .status-badge {
-            background: rgba(15, 23, 42, 0.8);
-            padding: 7px 14px;
-            border-radius: 999px;
-            font-size: 0.8em;
+            background: rgba(255, 235, 59, 0.9);
+            color: #1b5e20;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.85em;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
-            border: 1px solid rgba(148, 163, 184, 0.4);
+            letter-spacing: 0.1em;
+            font-weight: 700;
         }
 
         /* Players */
         .players-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
             margin-bottom: 20px;
         }
 
         .player-card {
-            background: radial-gradient(circle at top, #020617 0%, #020617 45%, #020617 100%);
-            border-radius: 14px;
-            padding: 10px 12px;
-            border: 1px solid rgba(75, 85, 99, 0.9);
+            background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+            border-radius: 15px;
+            padding: 15px;
+            border: 2px solid #4caf50;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 8px;
             position: relative;
-            transition: all 0.2s ease;
-        }
-
-        .player-card::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            border: 1px solid transparent;
-            background: linear-gradient(120deg, rgba(248, 250, 252, 0.18), transparent, transparent) border-box;
-            mask:
-              linear-gradient(#000 0 0) padding-box,
-              linear-gradient(#000 0 0);
-            mask-composite: exclude;
-            opacity: 0;
-            transition: opacity 0.2s ease;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
 
         .player-card.active {
-            border-color: #22c55e;
-            box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.35);
-        }
-
-        .player-card.active::before {
-            opacity: 1;
+            border-color: #ffeb3b;
+            box-shadow: 0 0 15px rgba(255, 235, 59, 0.7);
+            transform: translateY(-5px);
         }
 
         .player-card.me {
-            border-color: #0ea5e9;
-            background: radial-gradient(circle at top, #0f172a 0%, #020617 60%, #020617 100%);
+            border-color: #29b6f6;
+            background: linear-gradient(135deg, #0288d1 0%, #01579b 100%);
         }
 
         .player-name {
-            font-weight: 600;
-            color: #e5e7eb;
-            font-size: 0.95em;
+            font-weight: 700;
+            color: #fff;
+            font-size: 1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .player-info {
-            font-size: 0.8em;
-            color: #9ca3af;
+            font-size: 0.85em;
+            color: #e8f5e9;
         }
 
         .badge {
             display: inline-block;
-            background: #22c55e;
-            color: white;
-            padding: 3px 8px;
-            border-radius: 999px;
-            font-size: 0.7em;
-            margin-left: 6px;
+            background: #ffeb3b;
+            color: #1b5e20;
+            padding: 4px 10px;
+            border-radius: 50px;
+            font-size: 0.75em;
+            font-weight: 700;
         }
 
         .badge.owner {
-            background: #f97316;
+            background: #ff9800;
+            color: #fff;
         }
 
         /* Game Table */
         .game-area {
-            background: radial-gradient(circle at center, #166534 0%, #14532d 35%, #064e3b 70%, #022c22 100%);
-            border-radius: 18px;
-            padding: 26px 20px 20px;
-            margin-bottom: 16px;
-            border: 1px solid rgba(22, 163, 74, 0.6);
-            box-shadow: 0 25px 60px rgba(6, 95, 70, 0.7);
+            background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 2px solid #4caf50;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            position: relative;
         }
 
         .deck-area {
             display: flex;
             justify-content: center;
-            gap: 50px;
-            margin-bottom: 24px;
+            gap: 60px;
+            margin-bottom: 30px;
             align-items: center;
         }
 
@@ -289,140 +296,137 @@
 
         .pile-label {
             font-weight: 600;
-            margin-bottom: 8px;
-            color: #bbf7d0;
-            font-size: 0.9em;
+            margin-bottom: 10px;
+            color: #c8e6c9;
+            font-size: 0.95em;
         }
 
         .joker-info {
             text-align: center;
-            max-width: 160px;
+            max-width: 180px;
         }
 
         .joker-info .pile-label {
-            color: #fef3c7;
+            color: #ffeb3b;
         }
 
         .joker-info small {
             display: block;
-            margin-top: 6px;
-            color: #fcd34d;
-            font-size: 0.75em;
+            margin-top: 8px;
+            color: #fff9c4;
+            font-size: 0.8em;
         }
 
         .card-back, .card-front {
-            width: 80px;
-            height: 112px;
-            border-radius: 10px;
+            width: 90px;
+            height: 126px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.3em;
+            font-size: 1.5em;
             font-weight: bold;
             cursor: pointer;
-            transition: all 0.25s ease;
-            box-shadow: 0 12px 26px rgba(0, 0, 0, 0.6);
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
             position: relative;
         }
 
         .card-back {
-            background: repeating-linear-gradient(
-                135deg,
-                #1d4ed8,
-                #1d4ed8 6px,
-                #0f172a 6px,
-                #0f172a 12px
-            );
-            color: #e5e7eb;
-            border: 1px solid #0f172a;
+            background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+            color: #fff;
+            border: 2px solid #ffeb3b;
         }
 
         .card-back::after {
             content: "RUMMY";
             position: absolute;
-            font-size: 0.7em;
+            font-size: 0.8em;
             letter-spacing: 0.2em;
-            bottom: 8px;
-            opacity: 0.7;
+            bottom: 10px;
+            opacity: 0.8;
         }
 
         .card-back:hover {
-            transform: translateY(-6px) scale(1.03);
-            box-shadow: 0 18px 32px rgba(0, 0, 0, 0.9);
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.7);
         }
 
         .card-front {
-            background: #f9fafb;
-            color: #111827;
-            border: 2px solid #111827;
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
         }
 
         .card-front.red {
-            color: #b91c1c;
-            border-color: #b91c1c;
+            color: #d32f2f;
+            border-color: #d32f2f;
         }
 
         .empty-pile {
-            background: rgba(15, 23, 42, 0.7);
-            border: 2px dashed rgba(148, 163, 184, 0.8);
-            color: #9ca3af;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px dashed rgba(200, 230, 201, 0.7);
+            color: #c8e6c9;
             cursor: default;
         }
 
         .hand-area {
-            background: rgba(15, 23, 42, 0.98);
-            border-radius: 16px;
-            padding: 18px 12px 16px;
-            border: 1px solid rgba(148, 163, 184, 0.45);
+            background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid #4caf50;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
 
         .hand-title {
-            margin-bottom: 12px;
-            color: #e5e7eb;
+            margin-bottom: 15px;
+            color: #fff;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.95em;
+            font-size: 1em;
         }
 
         .turn-indicator {
-            background: #22c55e;
-            color: white;
-            padding: 5px 11px;
-            border-radius: 999px;
-            font-size: 0.8em;
-            animation: pulse 1.4s infinite;
-            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+            background: #ffeb3b;
+            color: #1b5e20;
+            padding: 8px 15px;
+            border-radius: 50px;
+            font-size: 0.85em;
+            font-weight: 700;
+            animation: pulse 1.5s infinite;
+            box-shadow: 0 0 0 0 rgba(255, 235, 59, 0.7);
         }
 
         @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(255, 235, 59, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 235, 59, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 235, 59, 0); }
         }
 
         .cards-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 10px;
             justify-content: center;
+            margin-bottom: 20px;
         }
 
         .card {
-            width: 66px;
-            height: 96px;
-            background: #f9fafb;
-            border: 2px solid #111827;
-            border-radius: 9px;
+            width: 70px;
+            height: 98px;
+            background: #fff;
+            border: 2px solid #000;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2em;
+            font-size: 1.3em;
             font-weight: 700;
-            color: #111827;
+            color: #000;
             cursor: grab;
-            transition: all 0.2s ease;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
             position: relative;
             user-select: none;
         }
@@ -432,139 +436,141 @@
         }
 
         .card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.8);
+            transform: translateY(-8px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
         }
 
         .card.selected {
-            transform: translateY(-8px) scale(1.03);
-            border-color: #22c55e;
-            box-shadow: 0 14px 30px rgba(34, 197, 94, 0.7);
+            transform: translateY(-10px) scale(1.05);
+            border-color: #ffeb3b;
+            box-shadow: 0 12px 25px rgba(255, 235, 59, 0.7);
         }
 
         .card.dragging {
-            opacity: 0.6;
+            opacity: 0.7;
         }
 
         .card.red {
-            color: #b91c1c;
-            border-color: #b91c1c;
+            color: #d32f2f;
+            border-color: #d32f2f;
         }
 
         .card.joker {
-            background: linear-gradient(135deg, #1f2937, #111827);
-            color: #fbbf24;
-            border-color: #fbbf24;
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            color: #fff;
+            border-color: #ffeb3b;
         }
 
         .card.wild {
-            border-color: #eab308;
-            box-shadow: 0 12px 24px rgba(234, 179, 8, 0.4);
+            border-color: #ffeb3b;
+            box-shadow: 0 8px 20px rgba(255, 235, 59, 0.5);
         }
 
         .group-toolbar {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             justify-content: flex-end;
-            margin-bottom: 12px;
+            margin-bottom: 15px;
         }
 
         .group-board {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 14px;
-            margin-top: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
         }
 
         .group-column {
-            background: rgba(3, 7, 18, 0.65);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            border-radius: 14px;
-            padding: 12px;
-            min-height: 180px;
+            background: rgba(30, 58, 41, 0.8);
+            border: 2px solid #4a7c59;
+            border-radius: 15px;
+            padding: 15px;
+            min-height: 200px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
         }
 
         .group-column.drop-target {
-            border-color: #22c55e;
-            box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.3);
+            border-color: #ffeb3b;
+            box-shadow: 0 0 10px rgba(255, 235, 59, 0.5);
         }
 
         .group-header {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 5px;
         }
 
         .group-header strong {
-            font-size: 0.9em;
-            color: #f8fafc;
+            font-size: 0.95em;
+            color: #ffeb3b;
         }
 
         .group-header span {
-            font-size: 0.75em;
-            color: #94a3b8;
+            font-size: 0.8em;
+            color: #c8e6c9;
         }
 
         .group-cards {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            min-height: 110px;
+            min-height: 120px;
         }
 
         .joker-pill {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 8px 12px;
-            border-radius: 999px;
-            background: rgba(234, 179, 8, 0.15);
-            border: 1px solid rgba(250, 204, 21, 0.4);
-            color: #fef3c7;
-            font-size: 0.85em;
+            gap: 8px;
+            padding: 10px 15px;
+            border-radius: 50px;
+            background: rgba(255, 235, 59, 0.2);
+            border: 2px solid rgba(255, 235, 59, 0.5);
+            color: #ffeb3b;
+            font-size: 0.9em;
+            font-weight: 600;
         }
 
         .joker-card-preview {
-            width: 72px;
-            height: 100px;
-            border-radius: 10px;
-            border: 2px dashed rgba(234, 179, 8, 0.7);
+            width: 80px;
+            height: 112px;
+            border-radius: 12px;
+            border: 2px dashed rgba(255, 235, 59, 0.8);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.1em;
-            color: #fbbf24;
-            margin-top: 8px;
+            font-size: 1.2em;
+            color: #ffeb3b;
+            margin-top: 10px;
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .controls {
-            margin-top: 14px;
+            margin-top: 20px;
             display: flex;
-            gap: 10px;
+            gap: 15px;
             justify-content: center;
         }
 
         .info-box {
-            background: rgba(251, 191, 36, 0.1);
-            border: 1px solid rgba(251, 191, 36, 0.6);
-            color: #fef3c7;
-            padding: 12px 14px;
-            border-radius: 10px;
-            margin-bottom: 18px;
+            background: rgba(255, 235, 59, 0.2);
+            border: 2px solid rgba(255, 235, 59, 0.6);
+            color: #fff9c4;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
             text-align: center;
-            font-size: 0.9em;
+            font-size: 0.95em;
         }
 
         @media (max-width: 768px) {
             .card-container {
-                padding: 18px;
+                padding: 20px;
             }
 
             h1 {
-                font-size: 1.6em;
+                font-size: 1.8em;
             }
 
             .btn-group {
@@ -576,30 +582,30 @@
             }
 
             .card {
-                width: 58px;
-                height: 80px;
-                font-size: 1.05em;
+                width: 60px;
+                height: 84px;
+                font-size: 1.1em;
             }
 
             .deck-area {
-                gap: 26px;
+                gap: 30px;
             }
         }
 
         .loading {
             text-align: center;
             padding: 20px;
-            color: #9ca3af;
+            color: #c8e6c9;
         }
 
         .spinner {
-            border: 3px solid #1f2937;
-            border-top: 3px solid #22c55e;
+            border: 3px solid #1b5e20;
+            border-top: 3px solid #ffeb3b;
             border-radius: 50%;
-            width: 34px;
-            height: 34px;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 8px;
+            margin: 0 auto 10px;
         }
 
         @keyframes spin {
@@ -608,19 +614,66 @@
         }
 
         .footer-link {
-            margin-top: 14px;
+            margin-top: 20px;
             text-align: right;
-            font-size: 0.8em;
-            color: #6b7280;
+            font-size: 0.85em;
+            color: #a5d6a7;
         }
 
         .footer-link a {
-            color: #9ca3af;
+            color: #c8e6c9;
             text-decoration: none;
         }
 
         .footer-link a:hover {
             text-decoration: underline;
+        }
+
+        .rules-box {
+            background: rgba(30, 58, 41, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 2px solid #4a7c59;
+        }
+
+        .rules-box h3 {
+            color: #ffeb3b;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .rules-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .rule-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .rule-icon {
+            width: 30px;
+            height: 30px;
+            background: #ffeb3b;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1b5e20;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .rule-text {
+            color: #e8f5e9;
+            font-size: 0.9em;
         }
     </style>
 </head>
@@ -628,27 +681,46 @@
     <div class="container">
         {% if page == "home" %}
         <div class="card-container">
-            <h1>🎴 Indian Rummy</h1>
-            <p class="subtitle">Real-time 13 Card Multiplayer Table</p>
+            <h1>🃏 Junglee Rummy</h1>
+            <p class="subtitle">Play 13 Card Rummy with Friends</p>
             
             <div class="btn-group">
                 <a href="{% url 'create_table' %}" class="btn">
-                    🎮 Create New Table
+                    🎮 Create Table
                 </a>
                 <a href="{% url 'join_table' %}" class="btn btn-secondary">
-                    🚪 Join Existing Table
+                    🚪 Join Table
                 </a>
             </div>
 
-            <div style="background: rgba(15,23,42,0.95); padding: 18px; border-radius: 14px; margin-top: 18px; border:1px solid rgba(55,65,81,0.9);">
-                <h3>How to Play:</h3>
-                <ul style="padding-left: 24px; line-height: 1.7; font-size: 0.95em; color:#d1d5db; margin-top:8px;">
-                    <li>Each player gets <b>13 cards</b> at the start</li>
-                    <li>On your turn, draw from <b>deck</b> or <b>discard pile</b></li>
-                    <li>Always discard <b>1 card</b> after drawing</li>
-                    <li>Form valid <b>sequences</b> and <b>sets</b> to win</li>
-                    <li>First player to declare valid hand wins the game</li>
-                </ul>
+            <div class="rules-box">
+                <h3>How to Play Rummy</h3>
+                <div class="rules-list">
+                    <div class="rule-item">
+                        <div class="rule-icon">1</div>
+                        <div class="rule-text">Each player gets <b>13 cards</b></div>
+                    </div>
+                    <div class="rule-item">
+                        <div class="rule-icon">2</div>
+                        <div class="rule-text">Form valid <b>sequences</b> and <b>sets</b></div>
+                    </div>
+                    <div class="rule-item">
+                        <div class="rule-icon">3</div>
+                        <div class="rule-text">Draw from deck or discard pile</div>
+                    </div>
+                    <div class="rule-item">
+                        <div class="rule-icon">4</div>
+                        <div class="rule-text">Discard one card after drawing</div>
+                    </div>
+                    <div class="rule-item">
+                        <div class="rule-icon">5</div>
+                        <div class="rule-text">First to declare valid hand wins</div>
+                    </div>
+                    <div class="rule-item">
+                        <div class="rule-icon">6</div>
+                        <div class="rule-text">Pure sequence is mandatory to win</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -670,7 +742,7 @@
                 <button type="submit">Create Table</button>
             </form>
 
-            <div style="margin-top: 18px;">
+            <div style="margin-top: 20px;">
                 <a href="{% url 'home' %}" class="btn btn-secondary">← Back to Home</a>
             </div>
         </div>
@@ -698,7 +770,7 @@
                 <button type="submit">Join Table</button>
             </form>
 
-            <div style="margin-top: 18px;">
+            <div style="margin-top: 20px;">
                 <a href="{% url 'home' %}" class="btn btn-secondary">← Back to Home</a>
             </div>
         </div>
@@ -709,10 +781,11 @@
                 <div>
                     <div class="table-code">Table: {{ table.code }}</div>
                     <div class="game-meta">
-                        Deck: <span id="deckCount">{{ deck_count }}</span> cards
+                        Deck: <span id="deckCount">{{ deck_count }}</span> cards | 
+                        Players: <span id="playerCount">{{ players|length }}</span>
                     </div>
                 </div>
-                <div class="status-badge" id="gameStatus">{{ table.status }}</div>
+                <div class="status-badge" id="gameStatus">{{ table.status|title }}</div>
             </div>
 
             <div class="players-grid" id="playersGrid">
@@ -732,9 +805,9 @@
 
             {% if table.status == "waiting" %}
             <div class="info-box">
-                Waiting for more players to join...
+                🔄 Waiting for more players to join...
                 {% if player.is_owner %}
-                    <div style="margin-top: 10px;">
+                    <div style="margin-top: 15px;">
                         <button onclick="startGame()" id="startBtn" {% if players|length < 2 %}disabled{% endif %}>
                             ▶ Start Game (Min 2 Players)
                         </button>
@@ -813,12 +886,12 @@
             </div>
             {% endif %}
 
-            <div style="margin-top: 16px; display:flex; justify-content:space-between; align-items:center;">
-                <a href="{% url 'home' %}" class="btn btn-secondary" style="flex:0 0 auto; padding-inline:18px;">
+            <div style="margin-top: 20px; display:flex; justify-content:space-between; align-items:center;">
+                <a href="{% url 'home' %}" class="btn btn-secondary" style="flex:0 0 auto; padding-inline:20px;">
                     ← Leave Table
                 </a>
                 <div class="footer-link">
-                    Multiplayer Rummy Demo
+                    Junglee Rummy Demo
                 </div>
             </div>
         </div>
@@ -837,10 +910,10 @@
             let latestHandSnapshot = [...initialHand];
 
             const GROUP_DEFS = [
-                { id: 'first-life', title: 'First Life', description: 'Pure sequence' },
-                { id: 'second-life', title: 'Second Life', description: 'Second sequence' },
-                { id: 'set-one', title: 'Trio / Set 1', description: 'Three of a kind' },
-                { id: 'set-two', title: 'Set 2 / Reserve', description: 'Extra meld' },
+                { id: 'first-life', title: 'First Life', description: 'Pure sequence (no joker)' },
+                { id: 'second-life', title: 'Second Life', description: 'Sequence (can use joker)' },
+                { id: 'set-one', title: 'Set 1', description: 'Three/Four of a kind' },
+                { id: 'set-two', title: 'Set 2', description: 'Extra meld' },
                 { id: 'unused', title: 'Unarranged Cards', description: 'Drag cards here' },
             ];
 
