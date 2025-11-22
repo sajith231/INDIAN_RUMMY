@@ -475,55 +475,93 @@
 
         .group-board {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 15px;
             margin-top: 15px;
         }
 
         .group-column {
-            background: rgba(30, 58, 41, 0.8);
-            border: 2px solid #4a7c59;
-            border-radius: 15px;
-            padding: 15px;
-            min-height: 200px;
+            background: rgba(20, 40, 28, 0.95);
+            border: 3px solid #2d4a36;
+            border-radius: 18px;
+            padding: 18px;
+            min-height: 180px;
             display: flex;
             flex-direction: column;
             gap: 12px;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         }
 
         .group-column.valid {
-            border-color: #4caf50;
-            background: rgba(76, 175, 80, 0.2);
-            box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+            background: rgba(27, 94, 32, 0.4);
+            border: 3px solid #4caf50;
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.6), inset 0 0 15px rgba(76, 175, 80, 0.2);
         }
 
         .group-column.drop-target {
             border-color: #ffeb3b;
-            box-shadow: 0 0 10px rgba(255, 235, 59, 0.5);
+            background: rgba(255, 235, 59, 0.15);
+            box-shadow: 0 0 15px rgba(255, 235, 59, 0.5);
         }
 
         .group-header {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 6px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
         }
 
         .group-header strong {
-            font-size: 0.95em;
+            font-size: 1.1em;
             color: #ffeb3b;
+            font-weight: 700;
+            letter-spacing: 0.5px;
         }
 
         .group-header span {
-            font-size: 0.8em;
-            color: #c8e6c9;
+            font-size: 0.75em;
+            color: #a5d6a7;
+            font-weight: 500;
         }
 
         .group-cards {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            min-height: 120px;
+            min-height: 100px;
+            align-items: flex-start;
+        }
+
+        .validation-status {
+            margin-top: 6px;
+            font-size: 0.8em;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 20px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .validation-status.valid {
+            background: rgba(76, 175, 80, 0.3);
+            color: #81c784;
+            border: 1px solid #4caf50;
+        }
+
+        .validation-status.invalid {
+            background: rgba(244, 67, 54, 0.2);
+            color: #e57373;
+            border: 1px solid #f44336;
+        }
+
+        .validation-status.empty {
+            background: rgba(255, 255, 255, 0.05);
+            color: #90a4ae;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .joker-pill {
@@ -596,6 +634,10 @@
 
             .deck-area {
                 gap: 30px;
+            }
+
+            .group-board {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -681,20 +723,6 @@
         .rule-text {
             color: #e8f5e9;
             font-size: 0.9em;
-        }
-
-        .validation-status {
-            margin-top: 5px;
-            font-size: 0.75em;
-            font-weight: 600;
-        }
-
-        .validation-status.valid {
-            color: #4caf50;
-        }
-
-        .validation-status.invalid {
-            color: #f44336;
         }
     </style>
 </head>
@@ -892,20 +920,20 @@
                             ➕ Group Selected
                         </button>
                         <button onclick="resetGroups()" style="flex:0;">
-                            🔁 Reset Layout
+                            🔄 Reset Layout
                         </button>
                     </div>
 
                     <div class="group-board" id="groupBoard"></div>
 
                     <div class="controls">
-                    <button onclick="discardSelected()" id="discardBtn" disabled>
-                        🗑 Discard Selected
-                    </button>
-                    <button onclick="declareWin()" class="btn-success" id="declareBtn" disabled>
-                        🏆 Declare Win
-                    </button>
-                </div>
+                        <button onclick="discardSelected()" id="discardBtn" disabled>
+                            🗑 Discard Selected
+                        </button>
+                        <button onclick="declareWin()" class="btn-success" id="declareBtn" disabled>
+                            🏆 Declare Win
+                        </button>
+                    </div>
                 </div>
             </div>
             {% endif %}
@@ -926,28 +954,26 @@
     const csrfToken = '{{ csrf_token }}';
     let hasDrawn = {{ player.has_drawn|yesno:"true,false" }};
     let isMyTurn = {{ is_my_turn|yesno:"true,false" }};
-    let selectedCardId = null; // last clicked card (for discard)
-    let selectedCardIds = new Set(); // multiple selected for grouping
+    let selectedCardId = null;
+    let selectedCardIds = new Set();
     let draggingCardId = null;
     let currentWildJoker = '{{ wild_joker|default_if_none:"" }}';
     const initialHandEl = document.getElementById('initial-hand-data');
     const initialHand = initialHandEl ? JSON.parse(initialHandEl.textContent) : [];
     let latestHandSnapshot = [...initialHand];
 
-    // Flexible groups
     const GROUP_DEFS = [
         { id: 'group-1', title: 'Group 1', description: 'Sequence or Set' },
         { id: 'group-2', title: 'Group 2', description: 'Sequence or Set' },
         { id: 'group-3', title: 'Group 3', description: 'Sequence or Set' },
         { id: 'group-4', title: 'Group 4', description: 'Sequence or Set' },
-        { id: 'unused', title: 'Unarranged Cards', description: 'Drag / keep extra cards here' },
+        { id: 'unused', title: 'Unarranged Cards', description: 'Drag cards here' },
     ];
 
     const groupStorageKey = `rummy_groups_${tableCode}`;
     let groupState = loadGroupState();
     let cardRegistry = {};
 
-    // Poll for game state updates
     setInterval(updateGameState, 2000);
 
     hydrateHand(initialHand);
@@ -1100,7 +1126,6 @@
             column.appendChild(cardWrap);
             board.appendChild(column);
             
-            // Validate the group (any valid sequence/set becomes green)
             validateGroup(group.id, statusEl, column);
         });
 
@@ -1112,14 +1137,14 @@
         
         if (cards.length === 0) {
             statusEl.textContent = groupId === 'unused' ? 'Unarranged' : 'Empty';
-            statusEl.className = 'validation-status';
+            statusEl.className = 'validation-status empty';
             columnEl.classList.remove('valid');
             return;
         }
 
         if (groupId === 'unused') {
             statusEl.textContent = 'Unarranged';
-            statusEl.className = 'validation-status';
+            statusEl.className = 'validation-status empty';
             columnEl.classList.remove('valid');
             return;
         }
@@ -1133,13 +1158,13 @@
         
         if (isPure) {
             isValid = true;
-            message = 'Pure Sequence';
+            message = '✓ Pure Sequence';
         } else if (isSeq) {
             isValid = true;
-            message = 'Sequence';
+            message = '✓ Sequence';
         } else if (isSet) {
             isValid = true;
-            message = 'Set';
+            message = '✓ Set';
         }
         
         statusEl.textContent = message;
@@ -1413,7 +1438,7 @@
         });
 
         if (hasInvalid) return false;
-        if (usedCards.length !== latestHandSnapshot.length) return false; // must use all cards
+        if (usedCards.length !== latestHandSnapshot.length) return false;
         if (pure < 1) return false;
         if (pure + seq < 2) return false;
         return true;
@@ -1448,9 +1473,7 @@
     function saveGroupState() {
         try {
             localStorage.setItem(groupStorageKey, JSON.stringify(groupState));
-        } catch {
-            // ignore
-        }
+        } catch {}
     }
 
     function ensureGroupStructure(state) {
