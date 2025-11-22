@@ -151,6 +151,19 @@ def table_screen(request, code):
     current_player = players[table.current_turn] if players else None
     is_my_turn = current_player and current_player.id == player.id
     
+    # Get all players' hands if game is finished
+    players_with_hands = []
+    if table.status == "finished":
+        for p in players:
+            players_with_hands.append({
+                "id": p.id,
+                "name": p.name,
+                "hand": p.get_hand(),
+                "is_owner": p.is_owner,
+                "is_me": p.id == player.id,
+                "is_winner": table.winner and table.winner.id == p.id
+            })
+    
     context = {
         "page": "table",
         "table": table,
@@ -160,7 +173,9 @@ def table_screen(request, code):
         "wild_joker": table.wild_joker,
         "top_discard": top_discard,
         "is_my_turn": is_my_turn,
-        "deck_count": len(table.get_deck())
+        "deck_count": len(table.get_deck()),
+        "winner": table.winner,
+        "players_with_hands": players_with_hands
     }
     
     return render(request, "game.html", context)
@@ -286,7 +301,7 @@ def game_state(request, code):
         "is_turn": players[table.current_turn].id == p.id if players else False
     } for p in players]
     
-    return JsonResponse({
+    response_data = {
         "status": table.status,
         "current_turn": table.current_turn,
         "deck_count": len(table.get_deck()),
@@ -295,7 +310,19 @@ def game_state(request, code):
         "players": players_data,
         "my_hand": player.get_hand(),
         "has_drawn": player.has_drawn
-    })
+    }
+    
+    # If game is finished, include winner and all players' hands
+    if table.status == "finished":
+        response_data["winner"] = {
+            "id": table.winner.id if table.winner else None,
+            "name": table.winner.name if table.winner else None
+        }
+        response_data["all_players_hands"] = {
+            p.id: p.get_hand() for p in players
+        }
+    
+    return JsonResponse(response_data)
 
 
 @require_http_methods(["POST"])
@@ -351,6 +378,7 @@ def declare(request, code):
 
     # If valid, finish game – winner is this player
     table.status = "finished"
+    table.winner = player
     table.save()
 
     # You could also update scores for others here.

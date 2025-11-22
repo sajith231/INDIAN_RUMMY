@@ -598,6 +598,45 @@
             justify-content: center;
         }
 
+        .winner-announcement {
+            margin-bottom: 30px;
+        }
+
+        .all-players-hands {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .player-hand-section {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid rgba(148, 163, 184, 0.3);
+        }
+
+        .player-hand-section.winner-hand {
+            border-color: #f9a825;
+            background: rgba(249, 168, 37, 0.1);
+            box-shadow: 0 0 20px rgba(249, 168, 37, 0.3);
+        }
+
+        .player-hand-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .player-cards-display {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-start;
+        }
+
         .info-box {
             background: rgba(255, 235, 59, 0.2);
             border: 2px solid rgba(255, 235, 59, 0.6);
@@ -865,7 +904,49 @@
             </div>
             {% endif %}
 
-            {% if table.status == "playing" %}
+            {% if table.status == "finished" %}
+            <div class="game-area">
+                <div class="winner-announcement">
+                    <h2 style="text-align: center; color: #ffeb3b; margin-bottom: 20px; font-size: 2em;">
+                        🏆 Game Finished! 🏆
+                    </h2>
+                    {% if winner %}
+                    <div style="text-align: center; background: linear-gradient(135deg, #f9a825 0%, #ffeb3b 100%); padding: 20px; border-radius: 15px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(249, 168, 37, 0.5);">
+                        <h3 style="color: #1a472a; font-size: 1.8em; margin: 0;">
+                            Winner: {{ winner.name }}
+                        </h3>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="all-players-hands">
+                    {% for p_data in players_with_hands %}
+                    <div class="player-hand-section {% if p_data.is_winner %}winner-hand{% endif %}">
+                        <div class="player-hand-header">
+                            <h3 style="color: #ffeb3b; margin: 0;">
+                                {{ p_data.name }}
+                                {% if p_data.is_owner %}<span class="badge owner">Owner</span>{% endif %}
+                                {% if p_data.is_me %}<span class="badge">You</span>{% endif %}
+                                {% if p_data.is_winner %}<span class="badge" style="background: #f9a825;">🏆 Winner</span>{% endif %}
+                            </h3>
+                            <span style="color: #c8e6c9;">{{ p_data.hand|length }} cards</span>
+                        </div>
+                        <div class="player-cards-display">
+                            {% for card in p_data.hand %}
+                            <div class="card {% if card|slice:'-1:' in '♥♦' %}red{% endif %}" style="transform: none; cursor: default;">
+                                {% if card|slice:':5' == 'JOKER' %}
+                                    🃏
+                                {% else %}
+                                    {{ card }}
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% elif table.status == "playing" %}
             <div class="game-area">
                 <div class="deck-area">
                     <div class="deck-pile">
@@ -1030,6 +1111,13 @@
                 }
 
                 updateButtonStates();
+
+                // Handle finished game state
+                if (data.status === 'finished') {
+                    if (data.winner && data.all_players_hands) {
+                        showFinishedGame(data.winner, data.all_players_hands, data.players);
+                    }
+                }
 
                 if (data.status === 'playing' && document.getElementById('startBtn')) {
                     location.reload();
@@ -1753,6 +1841,90 @@
             console.error('Error declaring win:', err);
             alert('Error declaring win');
         });
+    }
+
+    function showFinishedGame(winner, allHands, players) {
+        // Hide playing area if it exists
+        const playingArea = document.querySelector('.game-area');
+        if (playingArea && playingArea.querySelector('.deck-area')) {
+            playingArea.style.display = 'none';
+        }
+
+        // Check if finished game UI already exists
+        let finishedArea = document.querySelector('.finished-game-area');
+        if (finishedArea) {
+            finishedArea.remove();
+        }
+
+        // Create finished game area
+        finishedArea = document.createElement('div');
+        finishedArea.className = 'finished-game-area';
+        finishedArea.style.marginTop = '20px';
+
+        // Winner announcement
+        const winnerDiv = document.createElement('div');
+        winnerDiv.className = 'winner-announcement';
+        winnerDiv.innerHTML = `
+            <h2 style="text-align: center; color: #ffeb3b; margin-bottom: 20px; font-size: 2em;">
+                🏆 Game Finished! 🏆
+            </h2>
+            <div style="text-align: center; background: linear-gradient(135deg, #f9a825 0%, #ffeb3b 100%); padding: 20px; border-radius: 15px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(249, 168, 37, 0.5);">
+                <h3 style="color: #1a472a; font-size: 1.8em; margin: 0;">
+                    Winner: ${winner.name}
+                </h3>
+            </div>
+        `;
+        finishedArea.appendChild(winnerDiv);
+
+        // All players' hands
+        const handsDiv = document.createElement('div');
+        handsDiv.className = 'all-players-hands';
+
+        players.forEach(player => {
+            const hand = allHands[player.id] || [];
+            const isWinner = winner && winner.id === player.id;
+            const isMe = player.is_me;
+
+            const playerSection = document.createElement('div');
+            playerSection.className = `player-hand-section ${isWinner ? 'winner-hand' : ''}`;
+
+            const header = document.createElement('div');
+            header.className = 'player-hand-header';
+            header.innerHTML = `
+                <h3 style="color: #ffeb3b; margin: 0;">
+                    ${player.name}
+                    ${player.is_owner ? '<span class="badge owner">Owner</span>' : ''}
+                    ${isMe ? '<span class="badge">You</span>' : ''}
+                    ${isWinner ? '<span class="badge" style="background: #f9a825;">🏆 Winner</span>' : ''}
+                </h3>
+                <span style="color: #c8e6c9;">${hand.length} cards</span>
+            `;
+            playerSection.appendChild(header);
+
+            const cardsDiv = document.createElement('div');
+            cardsDiv.className = 'player-cards-display';
+
+            hand.forEach(card => {
+                const cardEl = document.createElement('div');
+                const isRed = card.includes('♥') || card.includes('♦');
+                cardEl.className = `card ${isRed ? 'red' : ''}`;
+                cardEl.style.transform = 'none';
+                cardEl.style.cursor = 'default';
+                cardEl.textContent = formatCardLabel(card);
+                cardsDiv.appendChild(cardEl);
+            });
+
+            playerSection.appendChild(cardsDiv);
+            handsDiv.appendChild(playerSection);
+        });
+
+        finishedArea.appendChild(handsDiv);
+
+        // Insert after players grid
+        const playersGrid = document.getElementById('playersGrid');
+        if (playersGrid && playersGrid.parentNode) {
+            playersGrid.parentNode.insertBefore(finishedArea, playersGrid.nextSibling);
+        }
     }
 
     function showDeclaredGroups(groups) {

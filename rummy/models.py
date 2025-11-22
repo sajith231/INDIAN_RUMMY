@@ -8,6 +8,7 @@ class GameTable(models.Model):
     wild_joker = models.CharField(max_length=10, null=True, blank=True)
     status = models.CharField(max_length=20, default="waiting")
     current_turn = models.IntegerField(default=0)
+    winner = models.ForeignKey('Player', related_name='won_games', null=True, blank=True, on_delete=models.SET_NULL)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
