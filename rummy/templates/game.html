@@ -1693,7 +1693,10 @@
     }
 
     function declareWin() {
-        if (!isMyTurn || !hasDrawn) return;
+        if (!isMyTurn || !hasDrawn) {
+            alert('It is not your turn or you have not drawn a card yet.');
+            return;
+        }
         
         if (!isHandValidForDeclare()) {
             alert('Hand is not valid for declaration. Need exactly 4 valid groups with 13 cards (excluding selected card), at least 1 pure sequence, and at least 2 sequences total.');
@@ -1721,42 +1724,28 @@
             }
         });
 
-        // First discard the selected card
-        fetch(`/api/table/${tableCode}/discard/`, {
+        // Declare with groups and card to discard in one request
+        fetch(`/api/table/${tableCode}/declare/`, {
             method: 'POST',
             headers: {
                 'X-CSRFToken': csrfToken,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ card: cardToDiscard })
+            body: JSON.stringify({ 
+                groups: groups,
+                card_to_discard: cardToDiscard
+            })
         })
         .then(res => res.json())
-        .then(discardData => {
-            if (!discardData.success) {
-                alert('❌ Failed to discard card: ' + (discardData.error || 'Unknown error'));
-                return;
-            }
-
-            // Then declare with the remaining 13 cards
-            return fetch(`/api/table/${tableCode}/declare/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': csrfToken,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ groups: groups })
-            });
-        })
-        .then(res => res ? res.json() : null)
         .then(data => {
-            if (data && data.success) {
+            if (data.success) {
                 // Show declared groups
                 showDeclaredGroups(groups);
                 alert('🎉 Valid declaration! You win!');
                 setTimeout(() => {
                     location.reload();
                 }, 3000);
-            } else if (data) {
+            } else {
                 alert('❌ ' + (data.error || 'Invalid declaration'));
             }
         })

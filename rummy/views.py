@@ -301,8 +301,9 @@ def game_state(request, code):
 @require_http_methods(["POST"])
 def declare(request, code):
     """
-    Declare win: frontend sends grouped cards.
+    Declare win: frontend sends grouped cards and card to discard.
     Validates full 13-card hand using rummy rules.
+    Discards the card as part of the declare process.
     """
     sid = make_session(request)
     table = get_object_or_404(GameTable, code=code)
@@ -316,13 +317,37 @@ def declare(request, code):
     if players[table.current_turn].id != player.id:
         return JsonResponse({"success": False, "error": "Not your turn"}, status=403)
 
+    # Must have drawn a card
+    if not player.has_drawn:
+        return JsonResponse({"success": False, "error": "Must draw a card before declaring"}, status=400)
+
     data = json.loads(request.body or "{}")
     groups = data.get("groups") or []
+    card_to_discard = data.get("card_to_discard")
 
+    if not card_to_discard:
+        return JsonResponse({"success": False, "error": "Must select a card to discard"}, status=400)
+
+    # Validate the groups
     ok, msg = validate_full_hand(groups, table.wild_joker)
 
     if not ok:
         return JsonResponse({"success": False, "error": msg}, status=400)
+
+    # Verify the card to discard is in hand
+    hand = player.get_hand()
+    if card_to_discard not in hand:
+        return JsonResponse({"success": False, "error": "Card to discard not in hand"}, status=400)
+
+    # Remove the card from hand and add to discard pile
+    hand.remove(card_to_discard)
+    player.set_hand(hand)
+    player.has_drawn = False
+    player.save()
+
+    discard_pile = table.get_discard_pile()
+    discard_pile.append(card_to_discard)
+    table.set_discard_pile(discard_pile)
 
     # If valid, finish game – winner is this player
     table.status = "finished"
