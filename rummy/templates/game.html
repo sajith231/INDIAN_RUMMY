@@ -1416,31 +1416,51 @@
 
     function isHandValidForDeclare() {
         const usedCards = [];
-        let pure = 0;
-        let seq = 0;
-        let hasInvalid = false;
+        let pureSequenceCount = 0;
+        let totalSequenceCount = 0;
+        let allGroupsValid = true;
 
         GROUP_DEFS.forEach(group => {
             if (group.id === 'unused') return;
             const ids = groupState[group.id] || [];
+            
+            // Skip empty groups
             if (!ids.length) return;
+            
             const cards = ids.map(id => cardRegistry[id].code);
 
             const isPure = checkPureSequence(cards);
             const isSeq = !isPure && checkSequenceJS(cards);
             const isSet = !isPure && !isSeq && checkSetJS(cards);
 
-            if (isPure) pure++;
-            else if (isSeq) seq++;
-            else if (!isSet) hasInvalid = true;
+            // Check if this group is valid
+            if (!isPure && !isSeq && !isSet) {
+                allGroupsValid = false;
+            }
+
+            // Count sequences
+            if (isPure) {
+                pureSequenceCount++;
+                totalSequenceCount++;
+            } else if (isSeq) {
+                totalSequenceCount++;
+            }
 
             usedCards.push(...cards);
         });
 
-        if (hasInvalid) return false;
+        // Rule 1: Must use all 13 cards (nothing in unarranged)
         if (usedCards.length !== latestHandSnapshot.length) return false;
-        if (pure < 1) return false;
-        if (pure + seq < 2) return false;
+        
+        // Rule 2: All groups must be valid
+        if (!allGroupsValid) return false;
+        
+        // Rule 3: At least 1 pure sequence required
+        if (pureSequenceCount < 1) return false;
+        
+        // Rule 4: At least 2 sequences total (pure + normal)
+        if (totalSequenceCount < 2) return false;
+
         return true;
     }
 
