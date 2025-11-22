@@ -1415,20 +1415,22 @@
     }
 
     function isHandValidForDeclare() {
-        const usedCards = [];
         let pureSequenceCount = 0;
         let totalSequenceCount = 0;
-        let allGroupsValid = true;
+        let validGroupCount = 0;
+        let totalCardsInGroups = 0;
 
         console.log('=== DECLARE VALIDATION START ===');
-        console.log('Total hand cards:', latestHandSnapshot.length);
+
+        // Get the selected card that will be discarded
+        const selectedForDiscard = selectedCardId || (selectedCardIds.size > 0 ? Array.from(selectedCardIds)[0] : null);
+        
+        if (selectedForDiscard) {
+            console.log('Selected card for discard:', cardRegistry[selectedForDiscard]?.code);
+        }
 
         GROUP_DEFS.forEach(group => {
-            if (group.id === 'unused') {
-                const unusedCount = (groupState[group.id] || []).length;
-                console.log('Unarranged cards:', unusedCount);
-                return;
-            }
+            if (group.id === 'unused') return;
             
             const ids = groupState[group.id] || [];
             
@@ -1438,7 +1440,17 @@
                 return;
             }
             
-            const cards = ids.map(id => cardRegistry[id].code);
+            // Filter out the selected card from validation
+            const filteredIds = selectedForDiscard ? ids.filter(id => id !== selectedForDiscard) : ids;
+            
+            // Skip if group becomes empty after removing selected card
+            if (!filteredIds.length) {
+                console.log(`${group.title}: Would be empty after removing selected card`);
+                return;
+            }
+            
+            const cards = filteredIds.map(id => cardRegistry[id].code);
+            totalCardsInGroups += cards.length;
 
             const isPure = checkPureSequence(cards);
             const isSeq = !isPure && checkSequenceJS(cards);
@@ -1448,50 +1460,48 @@
             console.log(`  - Pure Seq: ${isPure}, Normal Seq: ${isSeq}, Set: ${isSet}`);
 
             // Check if this group is valid
-            if (!isPure && !isSeq && !isSet) {
-                allGroupsValid = false;
-                console.log(`  - ❌ INVALID GROUP!`);
-            } else {
+            if (isPure || isSeq || isSet) {
+                validGroupCount++;
                 console.log(`  - ✓ Valid`);
+                
+                // Count sequences
+                if (isPure) {
+                    pureSequenceCount++;
+                    totalSequenceCount++;
+                } else if (isSeq) {
+                    totalSequenceCount++;
+                }
+            } else {
+                console.log(`  - ❌ INVALID GROUP!`);
             }
-
-            // Count sequences
-            if (isPure) {
-                pureSequenceCount++;
-                totalSequenceCount++;
-            } else if (isSeq) {
-                totalSequenceCount++;
-            }
-
-            usedCards.push(...cards);
         });
 
-        console.log('Used cards total:', usedCards.length);
+        console.log('Valid groups:', validGroupCount);
+        console.log('Total cards in valid groups:', totalCardsInGroups);
         console.log('Pure sequences:', pureSequenceCount);
         console.log('Total sequences:', totalSequenceCount);
-        console.log('All groups valid:', allGroupsValid);
 
-        // Rule 1: Must use all 13 cards (nothing in unarranged)
-        if (usedCards.length !== latestHandSnapshot.length) {
-            console.log('❌ FAIL: Card count mismatch');
+        // Rule 0: Must have exactly 13 cards in groups (excluding selected card)
+        if (totalCardsInGroups !== 13) {
+            console.log('❌ FAIL: Need exactly 13 cards in groups (have ' + totalCardsInGroups + ')');
+            return false;
+        }
+
+        // Rule 1: Must have at least 4 valid groups
+        if (validGroupCount < 4) {
+            console.log('❌ FAIL: Need 4 valid groups (have ' + validGroupCount + ')');
             return false;
         }
         
-        // Rule 2: All groups must be valid
-        if (!allGroupsValid) {
-            console.log('❌ FAIL: Invalid groups exist');
-            return false;
-        }
-        
-        // Rule 3: At least 1 pure sequence required
+        // Rule 2: At least 1 pure sequence required
         if (pureSequenceCount < 1) {
             console.log('❌ FAIL: No pure sequence');
             return false;
         }
         
-        // Rule 4: At least 2 sequences total (pure + normal)
+        // Rule 3: At least 2 sequences total (pure + normal)
         if (totalSequenceCount < 2) {
-            console.log('❌ FAIL: Less than 2 sequences');
+            console.log('❌ FAIL: Less than 2 sequences (have ' + totalSequenceCount + ')');
             return false;
         }
 
